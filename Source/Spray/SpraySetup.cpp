@@ -73,6 +73,15 @@ getInpVal(
 void
 SprayParticleContainer::readSprayParams(int& particle_verbose)
 {
+  amrex::Print() << "\n Reading spray model parameters ..." << std::endl;
+#if AMREX_SPACEDIM == 1
+  amrex::Abort("Spray model not valid in 1D");
+#elif AMREX_SPACEDIM == 2
+  amrex::Print()
+    << " Warning: Spray model in 2D assumes narrow domain in z-direction (Lz = "
+       "dz)!"
+    << std::endl;
+#endif
   m_sprayData = new SprayData{};
   d_sprayData =
     static_cast<SprayData*>(amrex::The_Arena()->alloc(sizeof(SprayData)));
