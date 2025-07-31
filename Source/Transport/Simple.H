@@ -149,6 +149,7 @@ struct BinaryDiff
     amrex::Real sum_of_Yloc = 0.0;
     for (int i = 0; i < NUM_SPECIES; ++i) {
       sum_of_Yloc += Yloc[i];
+      Ddiag[i] = 0.0;
     }
 
     for (int i = 1; i < NUM_SPECIES; ++i) {
@@ -190,6 +191,7 @@ struct BinaryDiff<eos::SRK>
     amrex::Real sum_of_Yloc = 0.0;
     for (int i = 0; i < NUM_SPECIES; ++i) {
       sum_of_Yloc += Yloc[i];
+      Ddiag[i] = 0.0;
     }
 
     for (int i = 1; i < NUM_SPECIES; ++i) {
