@@ -34,8 +34,11 @@ The subscript notation for this section is: :math:`d` relates to the liquid drop
 
    Y_{r,n} &= Y_{v,n} + A (Y_{g,n} - Y_{v,n})
 
-where :math:`A = 1/3` according the the one-third rule.
-Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, :math:`\mathcal{R}` is the universal gas constant, :math:`N_L` is the number of liquid species, and :math:`N_s` is the number of gas phase species. :math:`Y_n` and :math:`\chi_n` are the mass and molar fractions of species :math:`n`, respectively.
+where :math:`A = 1/3` according the the one-third rule. 
+
+Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas phase species, :math:`N_{pc}` is the number of gas phase species that participate in phase change, and :math:`N_{L,i}` is the number of liquid species that can contribute to gas phase species :math:`i`.
+
+Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_n` and :math:`\chi_n` are the mass and molar fractions of species :math:`n`, respectively.
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
 Note: this reference temperature is a constant value for all species and is not related to the reference state denoted by the subscript :math:`r`.
 
@@ -66,7 +69,7 @@ The droplets are assumed to be spherical with diameter :math:`d_d`. Therefore, t
 The procedure is as follows for updating the spray droplet:
 
 #. Interpolate the gas phase state to the droplet location using a trilinear interpolation scheme.
-#. Compute the boiling temperature for species :math:`n` at the current gas phase pressure using the Clasius-Clapeyron relation
+#. Compute the boiling temperature for liquid species :math:`n` at the current gas phase pressure using the Clasius-Clapeyron relation
 
    .. math::
       T_{b,n} = \left(\log\left(\frac{p_{\rm{atm}}}{p_g}\right) \frac{\mathcal{R}}{M_n h_{L,n}(T^*_{b,n})} + \frac{1}{T^*_{b,n}}\right)
@@ -81,41 +84,57 @@ The procedure is as follows for updating the spray droplet:
    .. math::
       h_{L,n}(T^*_{b,n}) = h_{L,n}(T^*) \left(\frac{T_{c,n} - T^*}{T_{c,n} - T^*_{b,n}} \right)^{-0.38}
 
-#. Compute the latent heat of the droplet using
+#. Compute the latent heat for liquid species :math:`n` in the droplet using
 
    .. math::
-      h_{L,n}(T_d) = h_{g,n}(T_d) - h_{g,n}(T^*) + h_{L,n}(T^*) - c_{p,L,n}(T^*) (T_d - T^*) \,.
+      h_{L,n}(T_d) = h_{g,i}(T_d) - h_{g,i}(T^*) + h_{L,n}(T^*) - c_{p,L,n}(T^*) (T_d - T^*) \,.
 
+   where :math:`i` is the gas phase species dependent on liquid species :math:`n` (usually the same, except when multiple liquid species are modeled using the same gas species).
+   
+#. Compute the saturation pressure, :math:`p_{{\rm{sat}}, n}`, using one of the methods described in the :ref:`Liquid Spray Properties <SprayLiquidProperties>` section.
 
-   and the saturation pressure, :math:`p_{{\rm{sat}}, n}`, using one of the methods described in the :ref:`Liquid Spray Properties <SprayLiquidProperties>` section.
+#. Estimate the composition of the vapor state using Raoult's law. First, convert from liquid state mass fractions to mole fractions for all :math:`N_L` liquid species and apply Raoult's law to obtain the vapor mole fractions:
 
-#. Estimate the mass fractions in the vapor state using Raoult's law
+   .. math:: 
+      \chi_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
 
-   .. math::
-      Y_{v,n} &= \frac{\chi_{v,n} M_n}{\overline{M}_v + \overline{M}_g (1 - \chi_{v,{\rm{sum}}})} \; \forall n \in N_L
+      \chi_{v,n} &= \frac{\chi_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
 
-      \chi_{v,{\rm{sum}}} &= \sum^{N_L}_{n=0} \chi_{v,n}
-
-      \chi_{v,n} &= \frac{\chi_{d,n} p_{{\rm{sat}},n}}{p_g}
-
-      \chi_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1}
-
-      \overline{M}_v &= \sum^{N_L}_{n=0} \chi_{v,n} M_n
-
-   If :math:`\chi_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`\chi_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
+   Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      Y_{r,n} = \left\{\begin{array}{c l}
-      \displaystyle Y_{v,n} + A (Y_{g,n} - Y_{v,n}) & {\text{If $Y_{v,n} > 0$}}, \\
-      \displaystyle\frac{1 - \sum^{N_L}_{k=0} Y_{v,k}}{1 - \sum^{N_L}_{k=0} Y_{g,k}} Y_{g,n} & {\text{Otherwise}}.
-      \end{array}\right. \; \forall n \in N_s.
+      \chi_{v,i} = \sum^{N_{L,i}}_{n=0} \chi_{v,n} \quad \forall i \in N_{pc},
+
+   and compute the mass fractions in the vapor state:
+
+   .. math::
+      \overline{M}_v &= \sum^{N_{pc}}_{i=0} \chi_{v,i} M_i
+
+      \chi_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} \chi_{v,i}
+
+      Y_{v,i} &= \frac{\chi_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - \chi_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
+
+   If :math:`\chi_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`\chi_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`\chi_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
+
+   .. math::
+      \chi_{g,n} = \frac{\chi_{d,n}}{\sum_{k=0}^{N_{L,i}} \chi_{d,k}} \chi_{g,i}
+
+   An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`\chi_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
+
+   The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
+
+   .. math::
+      Y_{r,i} = \left\{\begin{array}{c l}
+      \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{If $Y_{v,i} > 0$}}, \\
+      \displaystyle\frac{1 - \sum^{N_{pc}}_{k=0} Y_{v,k}}{1 - \sum^{N_{pc}}_{k=0} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
+      \end{array}\right. \quad \forall i \in N_g.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
 
    .. math::
-      \overline{M}_r &= \left(\sum^{N_s}_{n=0} \frac{Y_{r,n}}{M_n}\right)^{-1},
+      \overline{M}_r &= \left(\sum^{N_g}_{i=0} \frac{Y_{r,i}}{M_i}\right)^{-1},
 
-      c_{p,r} &= \sum^{N_s}_{n=0} Y_{s,n} c_{p,g,n}(T_r),
+      c_{p,r} &= \sum^{N_g}_{i=0} Y_{r,i} c_{p,g,i}(T_r),
 
       \rho_r &= \frac{\overline{M}_r p_g}{\mathcal{R} T_r}.
 
@@ -124,17 +143,22 @@ The procedure is as follows for updating the spray droplet:
 #. It is important to note that `PelePhysics` provides mixture averaged mass diffusion coefficient :math:`\overline{(\rho D)}_{r,n}`, which is converted into the binary mass diffusion coefficient using
 
    .. math::
-      (\rho D)_{r,n} = \overline{(\rho D)}_{r,n} \overline{M}_r / M_n.
+      (\rho D)_{r,i} = \overline{(\rho D)}_{r,i} \overline{M}_r / M_i.
 
    Mass diffusion coefficient is then normalized by the total fuel vapor molar fraction
 
    .. math::
-      (\rho D)^*_{r,n} = \frac{\chi_{v,n} (\rho D)_{r,n}}{\chi_{v,{\rm{sum}}}} \; \forall n \in N_L
+      (\rho D)^*_{r,i} = \frac{\chi_{v,i} (\rho D)_{r,i}}{\chi_{v,{\rm{sum}}}} \; \forall i \in N_{pc}
 
-   and the total is
+   which can be consistently distributed across liquid species in the many-to-one case:
 
    .. math::
-      (\rho D)_r = \sum_{n=0}^{N_L} (\rho D)_{r,n}^*
+      (\rho D)^*_{r,n} = \frac{\chi_{v,n}}{\chi_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{pc}
+
+   (further investigation needed to determine if molecular weight scaling is also needed here). The total is
+
+   .. math::
+      (\rho D)_r = \sum_{i=0}^{N_L} (\rho D)_{r,i}^*
 
 #. The momentum source is a function of the drag force
 
@@ -175,9 +199,9 @@ The procedure is as follows for updating the spray droplet:
       {\rm{Nu}}^* &= 2 + \frac{{\rm{Nu}}_0 - 2}{F(B_T)}
 
    * The Spalding numbers for mass transfer, :math:`B_M`, and heat transfer, :math:`B_T`, are computed using
-
+   
      .. math::
-        B_M &= \displaystyle\frac{\sum^{N_L}_{n=0} Y_{v,n} - \sum^{N_L}_{n=0} Y_{g,n}}{1 - \sum^{N_L}_{n=0} Y_{v,n}}
+        B_M &= \displaystyle\frac{\sum^{N_{pc}}_{i=0} Y_{v,i} - \sum^{N_{pc}}_{i=0} Y_{g,i}}{1 - \sum^{N_{pc}}_{i=0} Y_{v,i}}
 
         B_T &= \left(1 + B_M\right)^{\phi} - 1
 
@@ -205,7 +229,7 @@ The procedure is as follows for updating the spray droplet:
     .. math::
        S_{\rho} &= \mathcal{C} \sum^{N_L}_{n=0} \dot{m}_n,
 
-       S_{\rho Y_n} &= \mathcal{C} \dot{m}_n,
+       S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_{L,i}} \dot{m}_n \quad \forall i \in N_{pc},
 
        \mathbf{S}_{\rho \mathbf{u}} &= \mathcal{C} \mathbf{F}_d,
 
