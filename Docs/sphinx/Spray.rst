@@ -263,7 +263,45 @@ The procedure is as follows for updating the spray droplet:
 
    For such cases, fully three-dimensional simulations are recommended.
 
+Spray Equations with Manifold Models
+====================================
+
+The Spray implementation for Manifold-based combustion models (i.e., in the gas phase reduced-dimensional manifold parameters are transported rather than species) is meant to follow that of the implementation and assumptions described above for simulations using finite rate gas phase chemistry mechanisms. However, a major additional assumption introduced for the first pass at this implementation is to substantially neglect evolution of the energy equation. Instead, it is assumed that the enthalpy deficit in the gas phase due to enthalpy of vaporization is accounted for in the boundary conditions used to generate the reduced-order manifold that defines gas phase properties. For the manifold model implementation, the liquid phase remains represented by the same set of liquid species as in the finite rate chemistry implementation, and the liquid phase equations of motion, mass, momentum, and energy remain unchanged from those listed above. However, because the gas phase now involved transport of manifold parameters rather than species, the implementation must be adusted to properly estimate the gas phase composition near the droplets for the purpose of computing phase quilibria and phase change rates. The source terms must also be appropriately transformed from species source terms to manifold parameter source terms for coupling to the gas phase.
+
+The manifold parameters are denoted as :math:`\xi_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_i)` where :math:`\phi = (\bar{M}, Y_k, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase specied may contribute to a single species that can be extracted from the manifold.
+
+The modified procedure for Manifold-based gas phase chemistry is as follows for updating the spray droplet:
+
+#. Unchanged from Step 1 above.
+
+#. Unchanged from Step 2 above.
+
+#. The Manifold model does not provide information about species enthalpies. However, the enthalpy of vaporization term is not directly required in the present implementation, so this step to compute :math:`h_{L,n}(T_d)` is omitted. 
+
+#. Only Antoine-based computation of :math:`p_{\text{sat}}` can be used for the gas phase, as the Clausius-Clapeyron relationship requires :math:`h_{L,n}(T_d)`, which was not computed in the previous step.
+
+#. Estimate the vapor state using Raoult's law. Note that the vapor state must be estimated in terms of Manifold parameters, rather than species. First, vapor-liquid equilibrium calculations are used to compute values in terms of species in the same manner as for detailed chemistry, but these are then converted to values in terms of Manifold parameters.
+
+   .. math::
+      \chi_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+
+      \chi_{v,n} &= \frac{\chi_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
+
+   Then, collapse these mole fractions onto the species available in the gas phase, if needed:
+
+   .. math::
+      \chi_{v,i} = \sum^{N_{L,i}}_{n=0} \chi_{v,n} \quad \forall i \in N_{pc},
    
+   and compute the mass fractions in the vapor state:
+
+   .. math::
+      \overline{M}_v &= \sum^{N_{pc}}_{i=0} \chi_{v,i} M_i
+
+      \chi_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} \chi_{v,i}
+
+      Y_{v,i} &= \frac{\chi_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - \chi_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
+
+
 Spray Flags and Inputs
 ======================
 
