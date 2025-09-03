@@ -38,7 +38,7 @@ where :math:`A = 1/3` according the the one-third rule.
 
 Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas phase species, :math:`N_{pc}` is the number of gas phase species that participate in phase change, and :math:`N_{L,i}` is the number of liquid species that can contribute to gas phase species :math:`i`.
 
-Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_n` and :math:`\chi_n` are the mass and molar fractions of species :math:`n`, respectively.
+Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_n` and :math:`X_n` are the mass and molar fractions of species :math:`n`, respectively.
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
 Note: this reference temperature is a constant value for all species and is not related to the reference state denoted by the subscript :math:`r`.
 
@@ -96,30 +96,30 @@ The procedure is as follows for updating the spray droplet:
 #. Estimate the composition of the vapor state using Raoult's law. First, convert from liquid state mass fractions to mole fractions for all :math:`N_L` liquid species and apply Raoult's law to obtain the vapor mole fractions:
 
    .. math:: 
-      \chi_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
 
-      \chi_{v,n} &= \frac{\chi_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
+      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      \chi_{v,i} = \sum^{N_{L,i}}_{n=0} \chi_{v,n} \quad \forall i \in N_{pc},
+      X_{v,i} = \sum^{N_{L,i}}_{n=0} X_{v,n} \quad \forall i \in N_{pc},
 
    and compute the mass fractions in the vapor state:
 
    .. math::
-      \overline{M}_v &= \sum^{N_{pc}}_{i=0} \chi_{v,i} M_i
+      \overline{M}_v &= \sum^{N_{pc}}_{i=0} X_{v,i} M_i
 
-      \chi_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} \chi_{v,i}
+      X_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} X_{v,i}
 
-      Y_{v,i} &= \frac{\chi_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - \chi_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
 
-   If :math:`\chi_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`\chi_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`\chi_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
+   If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
 
    .. math::
-      \chi_{g,n} = \frac{\chi_{d,n}}{\sum_{k=0}^{N_{L,i}} \chi_{d,k}} \chi_{g,i}
+      X_{g,n} = \frac{X_{d,n}}{\sum_{k=0}^{N_{L,i}} X_{d,k}} X_{g,i}
 
-   An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`\chi_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
+   An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
 
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
@@ -148,12 +148,12 @@ The procedure is as follows for updating the spray droplet:
    Mass diffusion coefficient is then normalized by the total fuel vapor molar fraction
 
    .. math::
-      (\rho D)^*_{r,i} = \frac{\chi_{v,i} (\rho D)_{r,i}}{\chi_{v,{\rm{sum}}}} \; \forall i \in N_{pc}
+      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall i \in N_{pc}
 
    which can be consistently distributed across liquid species in the many-to-one case:
 
    .. math::
-      (\rho D)^*_{r,n} = \frac{\chi_{v,n}}{\chi_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{pc}
+      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{pc}
 
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
@@ -283,23 +283,23 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 #. Estimate the vapor state using Raoult's law. Note that the vapor state must be estimated in terms of Manifold parameters, rather than species. First, vapor-liquid equilibrium calculations are used to compute values in terms of species in the same manner as for detailed chemistry, but these are then converted to values in terms of Manifold parameters.
 
    .. math::
-      \chi_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
 
-      \chi_{v,n} &= \frac{\chi_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
+      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      \chi_{v,i} = \sum^{N_{L,i}}_{n=0} \chi_{v,n} \quad \forall i \in N_{pc},
+      X_{v,i} = \sum^{N_{L,i}}_{n=0} X_{v,n} \quad \forall i \in N_{pc},
    
    and compute the mass fractions in the vapor state:
 
    .. math::
-      \overline{M}_v &= \sum^{N_{pc}}_{i=0} \chi_{v,i} M_i
+      \overline{M}_v &= \sum^{N_{pc}}_{i=0} X_{v,i} M_i
 
-      \chi_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} \chi_{v,i}
+      X_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} X_{v,i}
 
-      Y_{v,i} &= \frac{\chi_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - \chi_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
 
 
 Spray Flags and Inputs
