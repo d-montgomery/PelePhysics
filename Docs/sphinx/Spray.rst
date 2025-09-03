@@ -47,7 +47,7 @@ The :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase specie
    0 & 0 & 0 & 0
    \end{bmatrix}
 
-with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` and :math:`N_{L,2} = 0.`.
+with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas phase species that participate in phase change.
 
 Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_{g,i}` and :math:`X_{g,i}` are the mass and molar fractions of gas-phase species :math:`i`, and :math:`Y_{L,n}` and :math:`X_{L,n}` are the mass and molar fractions of liquid-phase species :math:`n`, respectively. 
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
@@ -119,11 +119,11 @@ The procedure is as follows for updating the spray droplet:
    and compute the mass fractions in the vapor state:
 
    .. math::
-      \overline{M}_v &= \sum^{N_{pc}}_{i=0} X_{v,i} M_i
+      \overline{M}_v &= \sum^{N_{g}-1}_{i=0} X_{v,i} M_i
 
-      X_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} X_{v,i}
+      X_{v,{\rm{sum}}} &= \sum^{N_{g}-1}_{i=0} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{g}
 
    If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
 
@@ -131,6 +131,7 @@ The procedure is as follows for updating the spray droplet:
       X_{g,n} = \frac{X_{d,n}}{\sum_{k=0}^{N_{L,i}} X_{d,k}} X_{g,i}
 
    An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
+   :math:`{\color{red} \text{Should this be} X_{g,i} p_g > \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n} X_{v,i} p_{{\rm{sat}},n}}`.
 
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
