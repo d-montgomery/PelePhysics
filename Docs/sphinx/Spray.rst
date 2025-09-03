@@ -38,7 +38,18 @@ where :math:`A = 1/3` according the the one-third rule.
 
 Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas phase species, :math:`N_{pc}` is the number of gas phase species that participate in phase change, and :math:`N_{L,i}` is the number of liquid species that can contribute to gas phase species :math:`i`.
 
-Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_n` and :math:`X_n` are the mass and molar fractions of species :math:`n`, respectively.
+The :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase species is denoted :math:`\mathbf{L}`. The :math:`i-th` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas phase species :math:`i` and zeros elsewhere. For example, if we have :math:`N_L = 4` liquid species and :math:`N_g = 3` gas phase species, where liquid species 0, 1, and 3 contribute to gas phase species 0, liquid species 2 contributes to gas phase species 1, and no liquid species contribute to gas phase species 2, then
+
+.. math::
+   \mathbf{L} = \begin{bmatrix}
+   1 & 1 & 0 & 1 \\
+   0 & 0 & 1 & 0 \\
+   0 & 0 & 0 & 0
+   \end{bmatrix}
+
+with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` and :math:`N_{L,2} = 0.`.
+
+Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_{g,i}` and :math:`X_{g,i}` are the mass and molar fractions of gas-phase species :math:`i`, and :math:`Y_{L,n}` and :math:`X_{L,n}` are the mass and molar fractions of liquid-phase species :math:`n`, respectively. 
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
 Note: this reference temperature is a constant value for all species and is not related to the reference state denoted by the subscript :math:`r`.
 
@@ -47,19 +58,19 @@ The equations of motion, mass, momentum, and energy for the Lagrangian spray dro
 .. math::
    \frac{d \mathbf{X}_d}{d t} &= \mathbf{u}_d,
 
-   \frac{d m_d}{d t} &= \sum^{N_L}_{n=0} \dot{m}_n,
+   \frac{d m_d}{d t} &= \sum^{N_L-1}_{n=0} \dot{m}_n,
 
    m_d \frac{d Y_{d,n}}{d t} &= \dot{m}_n - Y_{d,n} \frac{d m_d}{d t},
 
    m_d \frac{d \mathbf{u}_d}{d t} &= \mathbf{F}_d + m_d \mathbf{g},
 
-   m_d c_{p,L} \frac{d T_d}{d t} &= \sum^{N_L}_{n=0} \dot{m}_n h_{L,n}(T_d) + \mathcal{Q}_d.
+   m_d c_{p,L} \frac{d T_d}{d t} &= \sum^{N_L-1}_{n=0} \dot{m}_n h_{L,n}(T_d) + \mathcal{Q}_d.
 
 where :math:`\mathbf{X}_d` is the spatial vector, :math:`\mathbf{u}_d` is the velocity vector, :math:`T_d` is the droplet temperature, :math:`m_d` is the mass of the droplet, :math:`\mathbf{g}` is an external body force (like gravity), :math:`\dot{m}` is evaporated mass, :math:`\mathcal{Q}_d` is the heat transfer between the droplet and the surrounding gas, and :math:`\mathbf{F}_d` is the momentum source term.
 The density of the liquid mixture, :math:`\rho_d`, depends on the liquid mass fractions of the dropet, :math:`Y_{d,n}`,
 
 .. math::
-   \rho_d = \left( \sum^{N_L}_{n=0} \frac{Y_{d,n}}{\rho_{L,n}} \right)^{-1}
+   \rho_d = \left( \sum^{N_L-1}_{n=0} \frac{Y_{d,n}}{\rho_{L,n}} \right)^{-1}
 
 The droplets are assumed to be spherical with diameter :math:`d_d`. Therefore, the mass is computed as
 
@@ -77,7 +88,7 @@ The procedure is as follows for updating the spray droplet:
    The boiling temperature of the droplet is computed as
 
    .. math::
-      T_{d,b} = \sum^{N_L}_{n=0} Y_{d,n} T_{b,n}
+      T_{d,b} = \sum^{N_L-1}_{n=0} Y_{d,n} T_{b,n}
 
    Since we only have the latent heat at the reference condition temperature, we estimate the enthalpy at the boiling condition using Watson's law
 
@@ -96,14 +107,14 @@ The procedure is as follows for updating the spray droplet:
 #. Estimate the composition of the vapor state using Raoult's law. First, convert from liquid state mass fractions to mole fractions for all :math:`N_L` liquid species and apply Raoult's law to obtain the vapor mole fractions:
 
    .. math:: 
-      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
 
       X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      X_{v,i} = \sum^{N_{L,i}}_{n=0} X_{v,n} \quad \forall i \in N_{pc},
+      X_{v,i} = \sum^{N_{L}-1}_{n=0} \mathbf{L}_{i,n}X_{v,n},
 
    and compute the mass fractions in the vapor state:
 
@@ -132,9 +143,9 @@ The procedure is as follows for updating the spray droplet:
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
 
    .. math::
-      \overline{M}_r &= \left(\sum^{N_g}_{i=0} \frac{Y_{r,i}}{M_i}\right)^{-1},
+      \overline{M}_r &= \left(\sum^{N_g-1}_{i=0} \frac{Y_{r,i}}{M_i}\right)^{-1},
 
-      c_{p,r} &= \sum^{N_g}_{i=0} Y_{r,i} c_{p,g,i}(T_r),
+      c_{p,r} &= \sum^{N_g-1}_{i=0} Y_{r,i} c_{p,g,i}(T_r),
 
       \rho_r &= \frac{\overline{M}_r p_g}{\mathcal{R} T_r}.
 
@@ -158,7 +169,7 @@ The procedure is as follows for updating the spray droplet:
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
    .. math::
-      (\rho D)_r = \sum_{i=0}^{N_L} (\rho D)_{r,i}^*
+      (\rho D)_r = \sum_{i=0}^{N_L-1} (\rho D)_{r,i}^*
 
 #. The momentum source is a function of the drag force
 
@@ -227,13 +238,13 @@ The procedure is as follows for updating the spray droplet:
 #. To alleviate conservation issues at AMR interfaces, each parcel only contributes to the gas phase source term of the cell containing it. The gas phase source terms for a single parcel to the cell are
 
     .. math::
-       S_{\rho} &= \mathcal{C} \sum^{N_L}_{n=0} \dot{m}_n,
+       S_{\rho} &= \mathcal{C} \sum^{N_L-1}_{n=0} \dot{m}_n,
 
        S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_{L,i}} \dot{m}_n \quad \forall i \in N_{pc},
 
        \mathbf{S}_{\rho \mathbf{u}} &= \mathcal{C} \mathbf{F}_d,
 
-       S_{\rho h} &= \mathcal{C}\left(\mathcal{Q}_d + \sum_{n=0}^{N_L} \dot{m}_n h_{g,n}(T_d)\right),
+       S_{\rho h} &= \mathcal{C}\left(\mathcal{Q}_d + \sum_{n=0}^{N_L-1} \dot{m}_n h_{g,n}(T_d)\right),
 
        S_{\rho E} &= S_{\rho h} + \frac{1}{2}\left\|\mathbf{u}_d\right\| S_{\rho} + \mathcal{C} \mathbf{F}_d \cdot \mathbf{u}_d
 
@@ -283,7 +294,7 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 #. Estimate the vapor state using Raoult's law. Note that the vapor state must be estimated in terms of Manifold parameters, rather than species. First, vapor-liquid equilibrium calculations are used to compute values in terms of species in the same manner as for detailed chemistry, but these are then converted to values in terms of Manifold parameters.
 
    .. math::
-      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
 
       X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
 
