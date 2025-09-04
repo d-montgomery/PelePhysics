@@ -173,7 +173,7 @@ The procedure is as follows for updating the spray droplet:
 
       {\color{red} \text{we need to be careful here, I think it should be:}}
 
-      {\color{red} (\rho D)^*_{r,n} = X_{v,n} \sum_{i = 0}^{N_g - 1} \mathbf{L}^T_{i,n} \frac{(\rho D)^*_{r,i}}{X_{v,i}} \quad \forall\; n = 0, 1, \dots, N_L-1.}
+      {\color{red} (\rho D)^*_{r,n} = X_{v,n} \sum_{i = 0}^{N_g - 1} \mathbf{L}^T_{n,i} \frac{(\rho D)^*_{r,i}}{X_{v,i}} \quad \forall\; n = 0, 1, \dots, N_L-1.}
 
       {\color{red}\text{the sum isn't really necessary since only one term}}
       
@@ -237,7 +237,7 @@ The procedure is as follows for updating the spray droplet:
      Note the dependence of :math:`{\rm{Nu}}^*` on :math:`B_T` means an iterative scheme is required to solve for both. The droplet vaporization rate and heat transfer become
 
      .. math::
-        \dot{m}_n &= -\pi (\rho D)_{r,n}^* d_d {\rm{Sh}}^* \log(1 + B_M). \; \forall n \in N_L
+        \dot{m}_n &= -\pi (\rho D)_{r,n}^* d_d {\rm{Sh}}^* \log(1 + B_M). \; \forall\; n = 0, 1, \dots, N_L - 1,
 
         \mathcal{Q}_d &= \pi \lambda_r d_d (T_g - T_d) {\rm{Nu}}^* \frac{\log(1 + B_T)}{B_T}
 
