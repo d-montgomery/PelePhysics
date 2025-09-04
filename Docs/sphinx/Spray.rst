@@ -47,7 +47,7 @@ The :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase specie
    0 & 0 & 0 & 0
    \end{bmatrix}
 
-with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas phase species that participate in phase change.
+with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas phase species that participate in phase change. In the case where each liquid species contributes to a unique gas phase species, :math:`\mathbf{L}` is the identity matrix.
 
 Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_{g,i}` and :math:`X_{g,i}` are the mass and molar fractions of gas-phase species :math:`i`, and :math:`Y_{L,n}` and :math:`X_{L,n}` are the mass and molar fractions of liquid-phase species :math:`n`, respectively. 
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
@@ -131,14 +131,14 @@ The procedure is as follows for updating the spray droplet:
       X_{g,n} = \frac{X_{d,n}}{\sum_{k=0}^{N_{L,i}} X_{d,k}} X_{g,i}
 
    An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
-   :math:`{\color{red} \text{Should this be} X_{g,i} p_g > \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n} X_{v,i} p_{{\rm{sat}},n}}`.
+   :math:`{\color{red} \text{Should this be} X_{g,i} p_g > \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n} X_{v,n} p_{{\rm{sat}},n} \text{so that the vapor pressure of the } i^{th} \text{ gas species is a mixture of the liquid species?}}`
 
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
    .. math::
       Y_{r,i} = \left\{\begin{array}{c l}
       \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{If $Y_{v,i} > 0$}}, \\
-      \displaystyle\frac{1 - \sum^{N_{pc}}_{k=0} Y_{v,k}}{1 - \sum^{N_{pc}}_{k=0} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
+      \displaystyle\frac{1 - \sum^{N_{g}-1}_{k=0} Y_{v,k}}{1 - \sum^{N_{g}-1}_{k=0} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
       \end{array}\right. \quad \forall i \in N_g.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
@@ -213,7 +213,7 @@ The procedure is as follows for updating the spray droplet:
    * The Spalding numbers for mass transfer, :math:`B_M`, and heat transfer, :math:`B_T`, are computed using
    
      .. math::
-        B_M &= \displaystyle\frac{\sum^{N_{pc}}_{i=0} Y_{v,i} - \sum^{N_{pc}}_{i=0} Y_{g,i}}{1 - \sum^{N_{pc}}_{i=0} Y_{v,i}}
+        B_M &= \displaystyle\frac{\sum^{N_{g}-1}_{i=0} Y_{v,i} - \sum^{N_{g}-1}_{i=0} Y_{g,i}}{1 - \sum^{N_{g}-1}_{i=0} Y_{v,i}}
 
         B_T &= \left(1 + B_M\right)^{\phi} - 1
 
@@ -241,7 +241,7 @@ The procedure is as follows for updating the spray droplet:
     .. math::
        S_{\rho} &= \mathcal{C} \sum^{N_L-1}_{n=0} \dot{m}_n,
 
-       S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_{L,i}} \dot{m}_n \quad \forall i \in N_{pc},
+       S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n}\dot{m}_n,
 
        \mathbf{S}_{\rho \mathbf{u}} &= \mathcal{C} \mathbf{F}_d,
 
