@@ -131,7 +131,11 @@ The procedure is as follows for updating the spray droplet:
       X_{g,n} = \frac{X_{d,n}}{\sum_{k=0}^{N_{L,i}} X_{d,k}} X_{g,i}
 
    An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
-   :math:`{\color{red} \text{Should this be} X_{g,i} p_g > \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n} X_{v,n} p_{{\rm{sat}},n} \text{so that the vapor pressure of the } i^{th} \text{ gas species is a mixture of the liquid species?}}`
+   
+   .. math::
+      {\color{red} \text{Should this be} X_{g,i} p_g > \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n} X_{v,n} p_{{\rm{sat}},n} \text{ so that the vapor pressure of the } i^{th} \text{ gas }}\\
+      
+      {\color{red}  \text{species is compared to the mixture vapor pressure of the correpsonding liquid species?}}
 
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
@@ -160,12 +164,12 @@ The procedure is as follows for updating the spray droplet:
    Mass diffusion coefficient is then normalized by the total fuel vapor molar fraction
 
    .. math::
-      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall i \in N_{pc}
+      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall i \in N_{g}
 
    which can be consistently distributed across liquid species in the many-to-one case:
 
    .. math::
-      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{pc}
+      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{g}
 
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
@@ -302,16 +306,16 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      X_{v,i} = \sum^{N_{L,i}}_{n=0} X_{v,n} \quad \forall i \in N_{pc},
+      X_{v,i} = \sum^{N_{L,i}}_{n=0} X_{v,n} \quad \forall i \in N_{g},
    
    and compute the mass fractions in the vapor state:
 
    .. math::
-      \overline{M}_v &= \sum^{N_{pc}}_{i=0} X_{v,i} M_i
+      \overline{M}_v &= \sum^{N_{g}-1}_{i=0} X_{v,i} M_i
 
-      X_{v,{\rm{sum}}} &= \sum^{N_{pc}}_{i=0} X_{v,i}
+      X_{v,{\rm{sum}}} &= \sum^{N_{g}-1}_{i=0} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{pc}
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{g}
 
 
 Spray Flags and Inputs
