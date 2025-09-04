@@ -107,14 +107,14 @@ The procedure is as follows for updating the spray droplet:
 #. Estimate the composition of the vapor state using Raoult's law. First, convert from liquid state mass fractions to mole fractions for all :math:`N_L` liquid species and apply Raoult's law to obtain the vapor mole fractions:
 
    .. math:: 
-      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall\; n = 0, 1, \dots, N_L-1,
 
-      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
+      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall\; n = 0, 1, \dots, N_L-1.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      X_{v,i} = \sum^{N_{L}-1}_{n=0} \mathbf{L}_{i,n}X_{v,n},
+      X_{v,i} = \sum^{N_{L}-1}_{n=0} \mathbf{L}_{i,n}X_{v,n} \quad \forall\; i = 0, 1, \dots, N_{g}-1,
 
    and compute the mass fractions in the vapor state:
 
@@ -123,7 +123,7 @@ The procedure is as follows for updating the spray droplet:
 
       X_{v,{\rm{sum}}} &= \sum^{N_{g}-1}_{i=0} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{g}
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i = 0, 1, \dots, N_{g}-1.
 
    If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
 
@@ -143,7 +143,7 @@ The procedure is as follows for updating the spray droplet:
       Y_{r,i} = \left\{\begin{array}{c l}
       \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{If $Y_{v,i} > 0$}}, \\
       \displaystyle\frac{1 - \sum^{N_{g}-1}_{k=0} Y_{v,k}}{1 - \sum^{N_{g}-1}_{k=0} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
-      \end{array}\right. \quad \forall i \in N_g.
+      \end{array}\right. \quad \forall\; i = 0, 1, \dots, N_g-1.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
 
@@ -159,17 +159,25 @@ The procedure is as follows for updating the spray droplet:
 #. It is important to note that `PelePhysics` provides mixture averaged mass diffusion coefficient :math:`\overline{(\rho D)}_{r,n}`, which is converted into the binary mass diffusion coefficient using
 
    .. math::
-      (\rho D)_{r,i} = \overline{(\rho D)}_{r,i} \overline{M}_r / M_i.
+      (\rho D)_{r,i} = \overline{(\rho D)}_{r,i} \overline{M}_r / M_i \quad \forall\; i = 0, 1, \dots, N_g-1.
 
    Mass diffusion coefficient is then normalized by the total fuel vapor molar fraction
 
    .. math::
-      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall i \in N_{g}
+      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall\; i = 0, 1, \dots, N_g-1,
 
    which can be consistently distributed across liquid species in the many-to-one case:
 
    .. math::
       (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{g}
+
+      {\color{red} \text{we need to be careful here, I think it should be:}}
+
+      {\color{red} (\rho D)^*_{r,n} = X_{v,n} \sum_{i = 0}^{N_g - 1} \mathbf{L}^T_{i,n} \frac{(\rho D)^*_{r,i}}{X_{v,i}} \quad \forall\; n = 0, 1, \dots, N_L-1.}
+
+      {\color{red}\text{the sum isn't really necessary since only one term}}
+      
+      {\color{red} \text{will be non-zero, so could say for all } i = 0, 1, \dots, N_g - 1}
 
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
@@ -245,7 +253,7 @@ The procedure is as follows for updating the spray droplet:
     .. math::
        S_{\rho} &= \mathcal{C} \sum^{N_L-1}_{n=0} \dot{m}_n,
 
-       S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n}\dot{m}_n,
+       S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n}\dot{m}_n \quad \forall\; i = 0, 1, \dots, N_g-1,
 
        \mathbf{S}_{\rho \mathbf{u}} &= \mathcal{C} \mathbf{F}_d,
 
@@ -299,14 +307,14 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 #. Estimate the vapor state using Raoult's law. Note that the vapor state must be estimated in terms of Manifold parameters, rather than species. First, vapor-liquid equilibrium calculations are used to compute values in terms of species in the same manner as for detailed chemistry, but these are then converted to values in terms of Manifold parameters.
 
    .. math::
-      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall n \in N_L.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall\; n = 0, 1, \dots, N_L -1.
 
-      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall n \in N_L.
+      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall\; n = 0, 1, \dots, N_L -1.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      X_{v,i} = \sum^{N_{L,i}}_{n=0} X_{v,n} \quad \forall i \in N_{g},
+      X_{v,i} = \sum^{N_{L}-1}_{n=0} \mathbf{L}_{i,n} X_{v,n} \quad \forall\; i = 0, 1, \dots, N_{g}-1,
    
    and compute the mass fractions in the vapor state:
 
@@ -315,7 +323,7 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 
       X_{v,{\rm{sum}}} &= \sum^{N_{g}-1}_{i=0} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall i \in N_{g}
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i = 0, 1, \dots, N_{g} - 1.
 
 
 Spray Flags and Inputs
