@@ -53,7 +53,7 @@ The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones co
    0 & 0 & 0 & 0
    \end{bmatrix},
 
-with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas-phase species that participate in phase change. 
+with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas-phase species that participate in phase change.
 The corresponding sets are:
 
 .. math::
@@ -145,19 +145,19 @@ The procedure is as follows for updating the spray droplet:
    If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we don't have access to the mole fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
 
    .. math::
-      X_{g,n} = \frac{X_{d,n}}{\sum_{k \in \mathcal{S}_{L,i}} X_{d,k}} X_{g,i} \quad \forall\; n \in \mathcal{S}_{L}, \; i \in \mathcal{S}_{pc} .
+      X_{g,n} = \frac{X_{d,n}}{\sum_{k \in \mathcal{S}_{L,i}} X_{d,k}} X_{g,i} \quad \forall\; n \in \mathcal{S}_{L,i}, \; i \in \mathcal{S}_{pc} .
 
    An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \bar{p}_{\rm{sat},i}` where
-   
-   .. math:: 
-      p_{\rm{sat},i} = \frac{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n} p_{\rm{sat},n}}{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n}} \quad \forall\; i \in \mathcal{S}_{pc}.
+
+   .. math::
+      \bar{p}_{\rm{sat},i} = \frac{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n} p_{\rm{sat},n}}{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n}} \quad \forall\; i \in \mathcal{S}_{pc}.
 
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
    .. math::
       Y_{r,i} = \left\{\begin{array}{c l}
       \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{if $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
-      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{g,k}} Y_{g,i} & {\text{otherwise}},
+      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
       \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
@@ -232,7 +232,7 @@ The procedure is as follows for updating the spray droplet:
    * The Spalding numbers for mass transfer, :math:`B_M`, and heat transfer, :math:`B_T`, are computed using
 
      .. math::
-        B_M &= \displaystyle\frac{\sum_{i \in \mathcal{S}_{pc}} Y_{v,i} - \sum_{i \in \mathcal{S}_{pc}} Y_{g,i}}{1 - \sum_{i \in \mathcal{S}_{pc}}  Y_{v,i}}
+        B_M &= \displaystyle\frac{\sum_{i \in \mathcal{S}_{pc} | Y_{v,i} > 0 } Y_{v,i} - \sum_{i \in \mathcal{S}_{pc} | Y_{v,i} > 0 } Y_{g,i}}{1 - \sum_{i \in \mathcal{S}_{pc}| Y_{v,i} > 0}  Y_{v,i}}
 
         B_T &= \left(1 + B_M\right)^{\phi} - 1
 
