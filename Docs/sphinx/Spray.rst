@@ -36,26 +36,37 @@ The subscript notation for this section is: :math:`d` relates to the liquid drop
 
 where :math:`A = 1/3` according the the one-third rule.
 
-Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas phase species, and the :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase species is denoted :math:`\mathbf{L}`. The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas phase species :math:`i` and zeros elsewhere. There are :math:`N_{pc}` gas species for which :math:`N_{L,i} > 0`, indicating that they participate in phase change. For convenience, we define the following sets of indices:
+Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas-phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas-phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas-phase species, and the :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase species is denoted :math:`\mathbf{L}`. The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas-phase species :math:`i` and zeros elsewhere. There are :math:`N_{pc}` gas species for which :math:`N_{L,i} > 0`, indicating that they participate in phase change. For convenience, we define the following sets of indices:
 
 .. math::
-   {\rm Liquid\ species}&: \mathcal{S}_L = [0, 1, \dots, N_L - 1] \\
-   {\rm Gas\ species}&: \mathcal{S}_g = [0, 1, 2, \dots , N_g - 1] \\
-   {\rm Gas\ species\ w/\ phase\ change} &: \mathcal{S}_{pc} = [i \;{\rm if}\; N_{L,i} > 0 \; \forall\; i \in \mathcal{S}_g] \\
-   {\rm Liquid\ interacting\ w/\ gas\ species\ } i&: \mathcal{S}_{L,i} = [n \;{\rm if}\; L_{n,i} \neq 0 \; \forall\; n \in \mathcal{S}_L] \; \forall\; i \in \mathcal{S}_g \\
+   {\rm Liquid\ species}&: \mathcal{S}_L = \{0, 1, \dots, N_L - 1\}, \\
+   {\rm Gas\ species}&: \mathcal{S}_g = \{0, 1, 2, \dots , N_g - 1\}, \\
+   {\rm Gas\ species\ w/\ phase\ change} &: \mathcal{S}_{pc} = \{i \in \mathcal{S}_g \; | \; N_{L,i} > 0 \}, \\
+   {\rm Liquid\ interacting\ w/\ gas\ species\ } i \in \mathcal{S}_g&: \mathcal{S}_{L,i} = \{n \in \mathcal{S_L} \; | \; \mathbf{L}_{i,n} \neq 0 \}. \\
 
-The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas phase species :math:`i` and zeros elsewhere. For example, if we have :math:`N_L = 4` liquid species and :math:`N_g = 3` gas phase species, where liquid species 0, 1, and 3 contribute to gas phase species 0, liquid species 2 contributes to gas phase species 1, and no liquid species contribute to gas phase species 2, then
+The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas-phase species :math:`i` and zeros elsewhere. For example, if we have :math:`N_L = 4` liquid species and :math:`N_g = 3` gas species, where liquid species 0, 1, and 3 contribute to gas-phase species 0, liquid species 2 contributes to gas-phase species 1, and no liquid species contribute to gas-phase species 2, then
 
 .. math::
    \mathbf{L} = \begin{bmatrix}
    1 & 1 & 0 & 1 \\
    0 & 0 & 1 & 0 \\
    0 & 0 & 0 & 0
-   \end{bmatrix}
+   \end{bmatrix},
 
-with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas phase species that participate in phase change. In the case where each liquid species contributes to a unique gas phase species, :math:`\mathbf{L}` is the identity matrix.
+with :math:`N_{L,0} = 3,`  :math:`N_{L,1} = 1,` :math:`N_{L,2} = 0,` and the :math:`N_{pc} = 2` gas-phase species that participate in phase change. 
+The corresponding sets are:
 
-Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_{g,i}` and :math:`X_{g,i}` are the mass and molar fractions of gas-phase species :math:`i`, and :math:`Y_{L,n}` and :math:`X_{L,n}` are the mass and molar fractions of liquid-phase species :math:`n`, respectively.
+.. math::
+   \mathcal{S}_{L} &= \{0, 1, 2, 3\}, \\
+   \mathcal{S}_g &= \{0, 1, 2\}, \\
+   \mathcal{S}_{pc} &= \{0, 1\}, \\
+   \mathcal{S}_{L,0} &= \{0, 1, 3\}, \\
+   \mathcal{S}_{L,1} &= \{2\}, \\
+   \mathcal{S}_{L,2} &= \emptyset.
+
+In the case where :math:`N_L = N_g` and each liquid species contributes to a unique gas-phase species, :math:`\mathbf{L}` is the identity matrix.
+
+Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_{g,i}` and :math:`X_{g,i}` are the mass and molar fractions of gas-phase species :math:`i`, and :math:`Y_{d,n}` and :math:`X_{d,n}` are the mass and molar fractions of liquid-phase droplet species :math:`n`, respectively.
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
 Note: this reference temperature is a constant value for all species and is not related to the reference state denoted by the subscript :math:`r`.
 
@@ -64,13 +75,13 @@ The equations of motion, mass, momentum, and energy for the Lagrangian spray dro
 .. math::
    \frac{d \mathbf{X}_d}{d t} &= \mathbf{u}_d,
 
-   \frac{d m_d}{d t} &= \sum^{N_L-1}_{n=0} \dot{m}_n,
+   \frac{d m_d}{d t} &= \sum_{n \in \mathcal{S}_L} \dot{m}_n,
 
-   m_d \frac{d Y_{d,n}}{d t} &= \dot{m}_n - Y_{d,n} \frac{d m_d}{d t},
+   m_d \frac{d Y_{d,n}}{d t} &= \dot{m}_n - Y_{d,n} \frac{d m_d}{d t} \quad \forall\; n \in \mathcal{S}_L,
 
    m_d \frac{d \mathbf{u}_d}{d t} &= \mathbf{F}_d + m_d \mathbf{g},
 
-   m_d c_{p,L} \frac{d T_d}{d t} &= \sum^{N_L-1}_{n=0} \dot{m}_n h_{L,n}(T_d) + \mathcal{Q}_d.
+   m_d c_{p,L} \frac{d T_d}{d t} &= \sum_{n \in \mathcal{S}_L} \dot{m}_n h_{L,n}(T_d) + \mathcal{Q}_d.
 
 where :math:`\mathbf{X}_d` is the spatial vector, :math:`\mathbf{u}_d` is the velocity vector, :math:`T_d` is the droplet temperature, :math:`m_d` is the mass of the droplet, :math:`\mathbf{g}` is an external body force (like gravity), :math:`\dot{m}` is evaporated mass, :math:`\mathcal{Q}_d` is the heat transfer between the droplet and the surrounding gas, and :math:`\mathbf{F}_d` is the momentum source term.
 The density of the liquid mixture, :math:`\rho_d`, depends on the liquid mass fractions of the dropet, :math:`Y_{d,n}`,
@@ -106,7 +117,7 @@ The procedure is as follows for updating the spray droplet:
    .. math::
       h_{L,n}(T_d) = h_{g,i}(T_d) - h_{g,i}(T^*) + h_{L,n}(T^*) - c_{p,L,n}(T^*) (T_d - T^*) \,.
 
-   where :math:`i` is the gas phase species dependent on liquid species :math:`n` (usually the same, except when multiple liquid species are modeled using the same gas species).
+   where :math:`i` is the gas-phase species dependent on liquid species :math:`n` (usually the same, except when multiple liquid species are modeled using the same gas species).
 
 #. Compute the saturation pressure, :math:`p_{{\rm{sat}}, n}`, using one of the methods described in the :ref:`Liquid Spray Properties <SprayLiquidProperties>` section.
 
@@ -131,24 +142,22 @@ The procedure is as follows for updating the spray droplet:
 
       Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in \mathcal{S}_{pc}.
 
-   If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
+   If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we don't have access to the mole fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
 
    .. math::
-      X_{g,n} = \frac{X_{d,n}}{\sum_{k=0}^{N_{L,i}} X_{d,k}} X_{g,i}
+      X_{g,n} = \frac{X_{d,n}}{\sum_{k \in \mathcal{S}_{L,i}} X_{d,k}} X_{g,i} \quad \forall\; n \in \mathcal{S}_{L}, \; i \in \mathcal{S}_{pc} .
 
-   An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \sum_{n=0}^{N_{L,i}} p_{{\rm{sat}},n}`.
-
-   .. math::
-      {\color{red} \text{Should this be} X_{g,i} p_g > \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n} X_{v,n} p_{{\rm{sat}},n} \text{ so that the vapor pressure of the } i^{th} \text{ gas }}\\
-
-      {\color{red}  \text{species is compared to the mixture vapor pressure of the correpsonding liquid species?}}
+   An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \bar{p}_{\rm{sat},i}` where
+   
+   .. math:: 
+      p_{\rm{sat},i} = \frac{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n} p_{\rm{sat},n}}{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n}} \quad \forall\; i \in \mathcal{S}_{pc}.
 
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
    .. math::
       Y_{r,i} = \left\{\begin{array}{c l}
-      \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{If $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
-      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
+      \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{if $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
+      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{g,k}} Y_{g,i} & {\text{otherwise}},
       \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
@@ -176,14 +185,6 @@ The procedure is as follows for updating the spray droplet:
 
    .. math::
       (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in \mathcal{S}_{L,i} \quad \forall i \in \mathcal{S}_{pc}
-
-      {\color{red} \text{we need to be careful here, I think it should be:}}
-
-      {\color{red} (\rho D)^*_{r,n} = X_{v,n} \sum_{i = 0}^{N_g - 1} \mathbf{L}^T_{n,i} \frac{(\rho D)^*_{r,i}}{X_{v,i}} \quad \forall\; n \in 0, 1, \dots, N_L-1.}
-
-      {\color{red}\text{the sum isn't really necessary since only one term}}
-
-      {\color{red} \text{will be non-zero, so could say for all } i \in 0, 1, \dots, N_g - 1}
 
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
@@ -313,23 +314,23 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 #. Estimate the vapor state using Raoult's law. Note that the vapor state must be estimated in terms of Manifold parameters, rather than species. First, vapor-liquid equilibrium calculations are used to compute values in terms of species in the same manner as for detailed chemistry, but these are then converted to values in terms of Manifold parameters.
 
    .. math::
-      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall\; n \in 0, 1, \dots, N_L -1.
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum_{k \in \mathcal{S}_L} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall\; n \in \mathcal{S}_L.
 
-      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall\; n \in 0, 1, \dots, N_L -1.
+      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall\; n \in \mathcal{S}_L.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      X_{v,i} = \sum^{N_{L}-1}_{n=0} \mathbf{L}_{i,n} X_{v,n} \quad \forall\; i \in 0, 1, \dots, N_{g}-1,
+      X_{v,i} = \sum_{n \in \mathcal{S}_{L,i}} X_{v,n} \quad \forall\; i \in \mathcal{S}_{pc},
 
    and compute the mass fractions in the vapor state:
 
    .. math::
-      \overline{M}_v &= \sum^{N_{g}-1}_{i=0} X_{v,i} M_i
+      \overline{M}_v &= \sum_{i \in \mathcal{S}_{pc}} X_{v,i} M_i
 
-      X_{v,{\rm{sum}}} &= \sum^{N_{g}-1}_{i=0} X_{v,i}
+      X_{v,{\rm{sum}}} &= \sum_{i \in \mathcal{S}_{pc}} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in 0, 1, \dots, N_{g} - 1.
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in \mathcal{S}_{pc}.
 
 
 Spray Flags and Inputs
@@ -343,7 +344,7 @@ Spray Flags and Inputs
 
   * The liquid fuel species names are specified using ``particles.fuel_species = NC7H16 NC10H22``. The number of fuel species listed must match ``SPRAY_FUEL_NUM``.
 
-  * Although this is not required or typical, if the evaporated mass should contribute to a different gas phase species than what is modeled in the liquid phase, use ``particles.dep_fuel_species``. For example, if we wanted the evaporated mass from both liquid species to contribute to a different species called ``SP3``, we would put ``particles.dep_fuel_species = SP3 SP3``. All species specified must be present in the chemistry transport and thermodynamic data.
+  * Although this is not required or typical, if the evaporated mass should contribute to a different gas-phase species than what is modeled in the liquid phase, use ``particles.dep_fuel_species``. For example, if we wanted the evaporated mass from both liquid species to contribute to a different species called ``SP3``, we would put ``particles.dep_fuel_species = SP3 SP3``. All species specified must be present in the chemistry transport and thermodynamic data.
 
 * The following table lists other inputs related to ``particles.``
 
@@ -354,7 +355,7 @@ Spray Flags and Inputs
    +=======================+===============================+=============+===================+
    |``fuel_species``       |Names of liquid species        |Yes          |None               |
    +-----------------------+-------------------------------+-------------+-------------------+
-   |``dep_fuel_species``   |Name of gas phase species to   |Yes          |Inputs to          |
+   |``dep_fuel_species``   |Name of gas-phase species to   |Yes          |Inputs to          |
    |                       |contribute                     |             |``fuel_species``   |
    +-----------------------+-------------------------------+-------------+-------------------+
    |``mom_transfer``       |Couple momentum with gas phase |No           |``1``              |
