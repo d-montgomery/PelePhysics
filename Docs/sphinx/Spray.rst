@@ -36,9 +36,15 @@ The subscript notation for this section is: :math:`d` relates to the liquid drop
 
 where :math:`A = 1/3` according the the one-third rule.
 
-Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas phase species, :math:`N_{pc}` is the number of gas phase species that participate in phase change, and :math:`N_{L,i}` is the number of liquid species that can contribute to gas phase species :math:`i`.
+Typically, the liquid state contains a subset of the species present in the gas phase. However, we also consider generalized capability where the representation of the composition in the liquid phase can be more detailed than in the gas phase. This would occur, for example, when using a gas phase chemical mechanism for a single component surrogate, but using a multi-component representation of the liquid to capture the effects of multi-component vaporization on the volatilization of droplets. In this case, multiple liquid species are modeled with a single gas phase species, which requires additional assumption and approximation; note that it is still assumed that each liquid species relates to only a single gas phase species. :math:`N_L` is the number of liquid species, and :math:`N_g` is total number of gas phase species, and the :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase species is denoted :math:`\mathbf{L}`. The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas phase species :math:`i` and zeros elsewhere. There are :math:`N_{pc}` gas species for which :math:`N_{L,i} > 0`, indicating that they participate in phase change. For convenience, we define the following sets of indices:
 
-The :math:`N_g \times N_L` mapping from liquid-phase species to gas-phase species is denoted :math:`\mathbf{L}`. The :math:`i-th` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas phase species :math:`i` and zeros elsewhere. For example, if we have :math:`N_L = 4` liquid species and :math:`N_g = 3` gas phase species, where liquid species 0, 1, and 3 contribute to gas phase species 0, liquid species 2 contributes to gas phase species 1, and no liquid species contribute to gas phase species 2, then
+.. math::
+   {\rm Liquid\ species}&: \mathcal{S}_L = [0, 1, \dots, N_L - 1] \\
+   {\rm Gas\ species}&: \mathcal{S}_g = [0, 1, 2, \dots , N_g - 1] \\
+   {\rm Gas\ species\ w/\ phase\ change} &: \mathcal{S}_{pc} = [i \;{\rm if}\; N_{L,i} > 0 \; \forall\; i \in \mathcal{S}_g] \\
+   {\rm Liquid\ interacting\ w/\ gas\ species\ } i&: \mathcal{S}_{L,i} = [n \;{\rm if}\; L_{n,i} \neq 0 \; \forall\; n \in \mathcal{S}_L] \; \forall\; i \in \mathcal{S}_g \\
+
+The :math:`i{\rm th}` row of :math:`\mathbf{L}` contains :math:`N_{L,i}` ones corresponding to the liquid species that contribute to gas phase species :math:`i` and zeros elsewhere. For example, if we have :math:`N_L = 4` liquid species and :math:`N_g = 3` gas phase species, where liquid species 0, 1, and 3 contribute to gas phase species 0, liquid species 2 contributes to gas phase species 1, and no liquid species contribute to gas phase species 2, then
 
 .. math::
    \mathbf{L} = \begin{bmatrix}
@@ -70,7 +76,7 @@ where :math:`\mathbf{X}_d` is the spatial vector, :math:`\mathbf{u}_d` is the ve
 The density of the liquid mixture, :math:`\rho_d`, depends on the liquid mass fractions of the dropet, :math:`Y_{d,n}`,
 
 .. math::
-   \rho_d = \left( \sum^{N_L-1}_{n=0} \frac{Y_{d,n}}{\rho_{L,n}} \right)^{-1}
+   \rho_d = \left( \sum_{n \in \mathcal{S}_L} \frac{Y_{d,n}}{\rho_{L,n}} \right)^{-1}
 
 The droplets are assumed to be spherical with diameter :math:`d_d`. Therefore, the mass is computed as
 
@@ -88,7 +94,7 @@ The procedure is as follows for updating the spray droplet:
    The boiling temperature of the droplet is computed as
 
    .. math::
-      T_{d,b} = \sum^{N_L-1}_{n=0} Y_{d,n} T_{b,n}
+      T_{d,b} = \sum_{n\in \mathcal{S}_L} Y_{d,n} T_{b,n}
 
    Since we only have the latent heat at the reference condition temperature, we estimate the enthalpy at the boiling condition using Watson's law
 
@@ -107,23 +113,23 @@ The procedure is as follows for updating the spray droplet:
 #. Estimate the composition of the vapor state using Raoult's law. First, convert from liquid state mass fractions to mole fractions for all :math:`N_L` liquid species and apply Raoult's law to obtain the vapor mole fractions:
 
    .. math::
-      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum^{N_L-1}_{k=0} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall\; n \in 0, 1, \dots, N_L-1,
+      X_{d,n} &= \frac{Y_{d,n}}{M_n}\left(\sum_{k \in \mathcal{S}_L} \frac{Y_{d,k}}{M_k}\right)^{-1} \quad \forall\; n \in \mathcal{S}_L,
 
-      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall\; n \in 0, 1, \dots, N_L-1.
+      X_{v,n} &= \frac{X_{d,n} p_{{\rm{sat}},n}}{p_g} \quad \forall\; n \in \mathcal{S}_L.
 
    Then, collapse these mole fractions onto the species available in the gas phase, if needed:
 
    .. math::
-      X_{v,i} = \sum^{N_{L}-1}_{n=0} \mathbf{L}_{i,n}X_{v,n} \quad \forall\; i \in 0, 1, \dots, N_{g}-1,
+      X_{v,i} = \sum_{n \in \mathcal{S}_{L}} \mathbf{L}_{i,n}X_{v,n} = \sum_{n \in \mathcal{S}_{L,i}} X_{v,n} \quad \forall\; i \in \mathcal{S}_{pc},
 
    and compute the mass fractions in the vapor state:
 
    .. math::
-      \overline{M}_v &= \sum^{N_{g}-1}_{i=0} X_{v,i} M_i
+      \overline{M}_v &= \sum_{i \in \mathcal{S}_{pc}} X_{v,i} M_i
 
-      X_{v,{\rm{sum}}} &= \sum^{N_{g}-1}_{i=0} X_{v,i}
+      X_{v,{\rm{sum}}} &= \sum_{i \in \mathcal{S}_{pc}} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in 0, 1, \dots, N_{g}-1.
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in \mathcal{S}_{pc}.
 
    If :math:`X_{g,n} p_g > p_{{\rm{sat}},n}`, then :math:`X_{v,n} = Y_{v,n} = 0` for that particular species in the equations above, since that means the gas phase is saturated. For cases with gas species that depend on multiple liquid species, we do have access to the mass fraction of each liquid species in the gas phase (:math:`X_{g,n}`). Therefore, we estimate it by distributing the gas species mole fraction across all the liquid species on which depends in proportion to the liquid composition:
 
@@ -141,16 +147,16 @@ The procedure is as follows for updating the spray droplet:
 
    .. math::
       Y_{r,i} = \left\{\begin{array}{c l}
-      \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{If $Y_{v,i} > 0$}}, \\
-      \displaystyle\frac{1 - \sum^{N_{g}-1}_{k=0} Y_{v,k}}{1 - \sum^{N_{g}-1}_{k=0} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
-      \end{array}\right. \quad \forall\; i \in 0, 1, \dots, N_g-1.
+      \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{If $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
+      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc}} Y_{g,k}} Y_{g,i} & {\text{Otherwise}}.
+      \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
 
    .. math::
-      \overline{M}_r &= \left(\sum^{N_g-1}_{i=0} \frac{Y_{r,i}}{M_i}\right)^{-1},
+      \overline{M}_r &= \left(\sum_{i \in \mathcal{S}_g} \frac{Y_{r,i}}{M_i}\right)^{-1},
 
-      c_{p,r} &= \sum^{N_g-1}_{i=0} Y_{r,i} c_{p,g,i}(T_r),
+      c_{p,r} &= \sum_{i \in \mathcal{S}_g} Y_{r,i} c_{p,g,i}(T_r),
 
       \rho_r &= \frac{\overline{M}_r p_g}{\mathcal{R} T_r}.
 
@@ -159,17 +165,17 @@ The procedure is as follows for updating the spray droplet:
 #. It is important to note that `PelePhysics` provides mixture averaged mass diffusion coefficient :math:`\overline{(\rho D)}_{r,n}`, which is converted into the binary mass diffusion coefficient using
 
    .. math::
-      (\rho D)_{r,i} = \overline{(\rho D)}_{r,i} \overline{M}_r / M_i \quad \forall\; i \in 0, 1, \dots, N_g-1.
+      (\rho D)_{r,i} = \overline{(\rho D)}_{r,i} \overline{M}_r / M_i \quad \forall\; i \in \mathcal{S}_{pc}.
 
    Mass diffusion coefficient is then normalized by the total fuel vapor molar fraction
 
    .. math::
-      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall\; i \in 0, 1, \dots, N_g-1,
+      (\rho D)^*_{r,i} = \frac{X_{v,i} (\rho D)_{r,i}}{X_{v,{\rm{sum}}}} \; \forall\; i \in \mathcal{S}_{pc},
 
    which can be consistently distributed across liquid species in the many-to-one case:
 
    .. math::
-      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in N_{L,i} \quad \forall i \in N_{g}
+      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in \mathcal{S}_{L,i} \quad \forall i \in \mathcal{S}_{pc}
 
       {\color{red} \text{we need to be careful here, I think it should be:}}
 
@@ -182,7 +188,7 @@ The procedure is as follows for updating the spray droplet:
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
    .. math::
-      (\rho D)_r = \sum_{i=0}^{N_L-1} (\rho D)_{r,i}^*
+      (\rho D)_r = \sum_{i \in \mathcal{S}_{pc}} (\rho D)_{r,i}^*.
 
 #. The momentum source is a function of the drag force
 
@@ -225,7 +231,7 @@ The procedure is as follows for updating the spray droplet:
    * The Spalding numbers for mass transfer, :math:`B_M`, and heat transfer, :math:`B_T`, are computed using
 
      .. math::
-        B_M &= \displaystyle\frac{\sum^{N_{g}-1}_{i=0} Y_{v,i} - \sum^{N_{g}-1}_{i=0} Y_{g,i}}{1 - \sum^{N_{g}-1}_{i=0} Y_{v,i}}
+        B_M &= \displaystyle\frac{\sum_{i \in \mathcal{S}_{pc}} Y_{v,i} - \sum_{i \in \mathcal{S}_{pc}} Y_{g,i}}{1 - \sum_{i \in \mathcal{S}_{pc}}  Y_{v,i}}
 
         B_T &= \left(1 + B_M\right)^{\phi} - 1
 
@@ -237,7 +243,7 @@ The procedure is as follows for updating the spray droplet:
      Note the dependence of :math:`{\rm{Nu}}^*` on :math:`B_T` means an iterative scheme is required to solve for both. The droplet vaporization rate and heat transfer become
 
      .. math::
-        \dot{m}_n &= -\pi (\rho D)_{r,n}^* d_d {\rm{Sh}}^* \log(1 + B_M). \; \forall\; n \in 0, 1, \dots, N_L - 1,
+        \dot{m}_n &= -\pi (\rho D)_{r,n}^* d_d {\rm{Sh}}^* \log(1 + B_M). \; \forall\; n \in \mathcal{S}_L,
 
         \mathcal{Q}_d &= \pi \lambda_r d_d (T_g - T_d) {\rm{Nu}}^* \frac{\log(1 + B_T)}{B_T}
 
@@ -251,13 +257,13 @@ The procedure is as follows for updating the spray droplet:
 #. To alleviate conservation issues at AMR interfaces, each parcel only contributes to the gas phase source term of the cell containing it. The gas phase source terms for a single parcel to the cell are
 
     .. math::
-       S_{\rho} &= \mathcal{C} \sum^{N_L-1}_{n=0} \dot{m}_n,
+       S_{\rho} &= \mathcal{C} \sum_{n \in \mathcal{S}_L} \dot{m}_n,
 
-       S_{\rho Y_i} &= \mathcal{C} \sum_{n=0}^{N_L-1} \mathbf{L}_{i,n}\dot{m}_n \quad \forall\; i \in 0, 1, \dots, N_g-1,
+       S_{\rho Y_i} &= \mathcal{C} \sum_{n \in \mathcal{S}_L} \mathbf{L}_{i,n}\dot{m}_n \quad \forall\; i \in \mathcal{S}_{g},
 
        \mathbf{S}_{\rho \mathbf{u}} &= \mathcal{C} \mathbf{F}_d,
 
-       S_{\rho h} &= \mathcal{C}\left(\mathcal{Q}_d + \sum_{n=0}^{N_L-1} \dot{m}_n h_{g,n}(T_d)\right),
+       S_{\rho h} &= \mathcal{C}\left(\mathcal{Q}_d + \sum_{n \in \mathcal{S}_L} \dot{m}_n h_{g,n}(T_d)\right),
 
        S_{\rho E} &= S_{\rho h} + \frac{1}{2}\left\|\mathbf{u}_d\right\| S_{\rho} + \mathcal{C} \mathbf{F}_d \cdot \mathbf{u}_d
 
