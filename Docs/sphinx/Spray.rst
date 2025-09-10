@@ -22,13 +22,13 @@ Firstly, spray modeling relies on the following assumptions:
 
 * The radiation, Soret, and Dufour effects are neglected
 
-Secondly, accurate spray modeling depends on accurate thermophysical and transport properties for both the gas and liquid phases.  
-Gas-phase properties are obtained directly from the mechanism files in `PelePhysics`, while liquid-phase properties are derived from user-provided inputs for each liquid fuel species.  
+Secondly, accurate spray modeling depends on accurate thermophysical and transport properties for both the gas and liquid phases.
+Gas-phase properties are obtained directly from the mechanism files in `PelePhysics`, while liquid-phase properties are derived from user-provided inputs for each liquid fuel species.
 Currently, two approaches are available for estimating liquid fuel properties:
 
 * The original PeleMP [#owen]_ method, which utilizes a combination of constant values and temperature-based fits.
 
-* A group contribution method (GCM) based on the work of Constantinou & Gani [#gani94]_ [#gani95]_ and Govindaraju & Ihme [#govindaraju]_, previously implemented and validated in `FuelLib <https://github.com/nrel/fuellib>`_. 
+* A group contribution method (GCM) based on the work of Constantinou & Gani [#gani94]_ [#gani95]_ and Govindaraju & Ihme [#govindaraju]_, previously implemented and validated in `FuelLib <https://github.com/nrel/fuellib>`_.
 
 Further details on the required inputs, as well as the formulations of both component-level and mixture-level liquid-phase properties, are provided in the :ref:`Liquid Spray Properties <SprayLiquidProperties>` section.
 
@@ -304,9 +304,9 @@ The procedure is as follows for updating the spray droplet:
 Spray Equations with Manifold Models
 ====================================
 
-The Spray implementation for Manifold-based combustion models (i.e., in the gas phase reduced-dimensional manifold parameters are transported rather than species) is meant to follow that of the implementation and assumptions described above for simulations using finite rate gas phase chemistry mechanisms. However, a major additional assumption introduced for the first pass at this implementation is to substantially neglect evolution of the energy equation. Instead, it is assumed that the enthalpy deficit in the gas phase due to enthalpy of vaporization is accounted for in the boundary conditions used to generate the reduced-order manifold that defines gas phase properties. For the manifold model implementation, the liquid phase remains represented by the same set of liquid species as in the finite rate chemistry implementation, and the liquid phase equations of motion, mass, momentum, and energy remain unchanged from those listed above. However, because the gas phase now involved transport of manifold parameters rather than species, the implementation must be adusted to properly estimate the gas phase composition near the droplets for the purpose of computing phase quilibria and phase change rates. The source terms must also be appropriately transformed from species source terms to manifold parameter source terms for coupling to the gas phase.
+The Spray implementation for Manifold-based combustion models (i.e., in the gas phase reduced-dimensional manifold parameters are transported rather than species) is meant to follow that of the implementation and assumptions described above for simulations using finite rate gas phase chemistry mechanisms. However, a major additional assumption introduced for the first pass at this implementation is to substantially neglect evolution of the energy equation. Instead, it is assumed that the enthalpy deficit in the gas phase due to enthalpy of vaporization is accounted for in the boundary conditions used to generate the reduced-order manifold that defines gas phase properties. For the manifold model implementation, the liquid phase remains represented by the same set of liquid species as in the finite rate chemistry implementation, and the liquid phase equations of motion, mass, momentum, and energy remain unchanged from those listed above. However, because the gas phase now involved transport of manifold parameters rather than species, the implementation must be adjusted to properly estimate the gas phase composition near the droplets for the purpose of computing phase quilibria and phase change rates. The source terms must also be appropriately transformed from species source terms to manifold parameter source terms for coupling to the gas phase.
 
-The manifold parameters are denoted as :math:`\xi_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_i)` where :math:`\phi = (\bar{M}, Y_k, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase specied may contribute to a single species that can be extracted from the manifold.
+The manifold parameters are denoted as :math:`\xi_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_i)` where :math:`\phi = (\bar{M}, Y_k, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase species may contribute to a single species that can be extracted from the manifold.
 
 The modified procedure for Manifold-based gas phase chemistry is as follows for updating the spray droplet:
 
@@ -392,30 +392,30 @@ Spray Flags and Inputs
 Liquid Spray Properties
 -----------------------
 
-The required inputs and corresponding correlations for the original *PeleMP* [#owen]_ 
-and the *FuelLib-based GCM* are outlined in the subsections below. Please note the following details:  
+The required inputs and corresponding correlations for the original *PeleMP* [#owen]_
+and the *FuelLib-based GCM* are outlined in the subsections below. Please note the following details:
 
-**Units:**  
+**Units:**
 
-* `PeleLM` and `PeleLMeX` use MKS units, while `PeleC` uses CGS units. The Spray inputs follow the same convention.  
+* `PeleLM` and `PeleLMeX` use MKS units, while `PeleC` uses CGS units. The Spray inputs follow the same convention.
 
-* For example, when running a spray simulation coupled with `PeleC`, the values for ``particles.fuel_cp`` must be provided in erg/g.  
+* For example, when running a spray simulation coupled with `PeleC`, the values for ``particles.fuel_cp`` must be provided in erg/g.
 
-**Input flags:**  
+**Input flags:**
 
-* A number of ``particles.`` flags are required in the input file to define liquid fuel properties.  
+* A number of ``particles.`` flags are required in the input file to define liquid fuel properties.
 
-* For demonstration purposes, two liquid species will be used: ``NC7H16`` and ``NC10H22``.  
+* For demonstration purposes, two liquid species will be used: ``NC7H16`` and ``NC10H22``.
 
-* Many values must be specified on a per-species basis. In this example, one would need to specify:  
-   
-   - ``particles.NC7H16_crit_temp = 540`` critical temperature of 540 K for ``NC7H16``  
-   
+* Many values must be specified on a per-species basis. In this example, one would need to specify:
+
+   - ``particles.NC7H16_crit_temp = 540`` critical temperature of 540 K for ``NC7H16``
+
    - ``particles.NC10H22_crit_temp = 617`` critical temperatures of 617 K for ``NC10H22``.
 
-**Additional method-specific inputs:**  
-   
-   * The following tables list other required inputs related to ``particles.``,  where ``SP`` refers to a given fuel species name.  
+**Additional method-specific inputs:**
+
+   * The following tables list other required inputs related to ``particles.``,  where ``SP`` refers to a given fuel species name.
 
 The source code for the liquid spray properties can be found in ``SprayProperties.H``.
 
@@ -492,7 +492,7 @@ Currently the *GCM* approach of estimating liquid fuel properties is only availa
 * Setting the compile-time flag ``SPRAY_GCM=TRUE`` in the case's ``GNUmakefile``
 
 * Generating a liquid-fuel-specific GCM input file from FuelLib, and copying the input file into the case directory.
-   
+
    - The process for generating this input file is provided in FuelLib's tutorial: `Exporting GCM Properties for Pele <https://nrel.github.io/FuelLib/tutorials.html#exporting-gcm-properties-for-pele>`_.
 
    - An example of using the GCM in Pele is provided in ``PeleLMeX/Exec/RegTests/SingleDropEvap``.
@@ -659,7 +659,7 @@ Single Droplet Tests
 Single droplet tests are performed in 2D with PeleLMeX and compared with experimental results published in literature. These tests are setup in ``PeleLMeX/Exec/RegTests/SingleDropEvap`` and can be compiled with ``SPRAY_GCM=TRUE`` or ``FALSE``. To run a test case with the *PeleMP* or *GCM* liquid properties, simply open ``Validate.py`` and set the ``LiqPropsType`` and case name from the table below, for example ::
 
    # Liquid properties model: "mp" or "gcm"
-   LiqPropsType = "mp" 
+   LiqPropsType = "mp"
 
    # Case object
    case = WongLin(LiqPropsType)
@@ -711,9 +711,9 @@ The following table details the parameters of each test:
 
 .. [#owen] "PeleMP: The Multiphysics Solver for the Combustion Pele Adaptive Mesh Refinement Code Suite," L. D. Owen, W. Ge, M. Rieth, M. Arienti, L. Esclapez, B. S. Soriano, M. E. Mueller, M. Day, R. Sankaran, and J. H. Chen, J. Fluids Eng., vol. 146, no. 4, pp. 1-18 (2024), doi: `10.1115/1.4064494 <https://doi.org/10.1115/1.4064494>`_.
 
-.. [#gani94] "New group contribution method for estimating properties of pure compounds", L. Constantinou, and R. Gani, AIChE J., Vol. 40, No. 10, pp.1697-1710 (1994), doi: `10.1002/aic.690401011 <https://doi.org/10.1002/aic.690401011>`_. 
+.. [#gani94] "New group contribution method for estimating properties of pure compounds", L. Constantinou, and R. Gani, AIChE J., Vol. 40, No. 10, pp.1697-1710 (1994), doi: `10.1002/aic.690401011 <https://doi.org/10.1002/aic.690401011>`_.
 
-.. [#gani95] "Estimation of the acentric factor and the liquid molar volume at 298 K using a new group contribution method", L. Constantinou, and R. Gani, Fluid Phase Equilibria, Vol. 103, No. 1, pp.11-22 (1995), doi: `10.1016/0378-3812(94)02593-P. <https://doi.org/10.1016/0378-3812(94)02593-P.>`_. 
+.. [#gani95] "Estimation of the acentric factor and the liquid molar volume at 298 K using a new group contribution method", L. Constantinou, and R. Gani, Fluid Phase Equilibria, Vol. 103, No. 1, pp.11-22 (1995), doi: `10.1016/0378-3812(94)02593-P. <https://doi.org/10.1016/0378-3812(94)02593-P.>`_.
 
 .. [#govindaraju] "Group contribution method for multicomponent evaporation with application to transportation fuels", Int. J. of Heat and Mass Transfer, Vol. 102, pp.833–845 (2016), doi: `10.1016/j.ijheatmasstransfer.2016.06.079 <https://doi.org/10.1016/j.ijheatmasstransfer.2016.06.079>`_.
 
@@ -725,9 +725,8 @@ The following table details the parameters of each test:
 
 .. [#nomura] "Experimental study on high-pressure droplet evaporation using microgravity conditions", H. Nomura and Y. Ujiie and H. J. Rath and J. Sato and M. Kono, Symposium (International) on Combustion, vol. 26, no. 1, pp. 1267–1273 (1996), doi: `10.1016/S0082-0784(96)80344-4 <https://doi.org/10.1016/S0082-0784(96)80344-4>`_.
 
-.. [#wonglin] "Internal temperature distributions of droplets vaporizing in high-temperature convective flows", S.-C. Wong and A.-C. Lin, J. Fluid Mech., vol. 237, pp. 671–687 (1992), doi: `10.1017/S0022112092003574 <https://doi.org/10.1017/S0022112092003574>`_.  
+.. [#wonglin] "Internal temperature distributions of droplets vaporizing in high-temperature convective flows", S.-C. Wong and A.-C. Lin, J. Fluid Mech., vol. 237, pp. 671–687 (1992), doi: `10.1017/S0022112092003574 <https://doi.org/10.1017/S0022112092003574>`_.
 
 .. [#daif] "Comparison of multicomponent fuel droplet vaporization experiments in forced convection with the Sirignano model", A. Daı̈f and M. Bouaziz and X. Chesneau and A. Ali Chérif, Exp. Therm. Fluid Sci., vol. 18, no. 4, pp. 282-290, Issn 0894-1777 (1998), doi: `10.1016/S0894-1777(98)10035-3 <https://doi.org/10.1016/S0894-1777(98)10035-3>`_.
 
 .. [#runge] "Low-temperature vaporization of JP-4 and JP-8 fuel droplets", T. Runge and M. Teske and C. E. Polymeropoulos, At. Sprays, vol. 8, pp. 25-44 (1998), doi: `10.1615/AtomizSpr.v8.i1.20 <https://doi.org/10.1615/AtomizSpr.v8.i1.20>`_.
-
