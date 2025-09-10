@@ -306,7 +306,7 @@ Spray Equations with Manifold Models
 
 The Spray implementation for Manifold-based combustion models (i.e., in the gas phase reduced-dimensional manifold parameters are transported rather than species) is meant to follow that of the implementation and assumptions described above for simulations using finite rate gas phase chemistry mechanisms. However, a major additional assumption introduced for the first pass at this implementation is to substantially neglect evolution of the energy equation. Instead, it is assumed that the enthalpy deficit in the gas phase due to enthalpy of vaporization is accounted for in the boundary conditions used to generate the reduced-order manifold that defines gas phase properties. For the manifold model implementation, the liquid phase remains represented by the same set of liquid species as in the finite rate chemistry implementation, and the liquid phase equations of motion, mass, momentum, and energy remain unchanged from those listed above. However, because the gas phase now involved transport of manifold parameters rather than species, the implementation must be adjusted to properly estimate the gas phase composition near the droplets for the purpose of computing phase quilibria and phase change rates. The source terms must also be appropriately transformed from species source terms to manifold parameter source terms for coupling to the gas phase.
 
-The manifold parameters are denoted as :math:`\xi_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_i)` where :math:`\phi = (\bar{M}, Y_k, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase species may contribute to a single species that can be extracted from the manifold.
+The manifold parameters are denoted as :math:`\xi_j` and are defined as linear combinations of species  :math:`\xi_j = W_{ij} Y_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_j)` where :math:`\phi = (\bar{M}, Y_k, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase species may contribute to a single species that can be extracted from the manifold.
 
 The modified procedure for Manifold-based gas phase chemistry is as follows for updating the spray droplet:
 
@@ -337,8 +337,33 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 
       X_{v,{\rm{sum}}} &= \sum_{i \in \mathcal{S}_{pc}} X_{v,i}
 
-      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in \mathcal{S}_{pc}.
+      Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in \mathcal{S}_{pc},
 
+   noting that :math:`\overline{M}_g`, the mean molecular weight in the gas phase, must be available as one of the :math:`\phi` that can be evaluated from the manifold, and that molecular weights
+   for the gas phase specied in :math:`\mathcal{S}_{pc}` must also be specified as part of the manifold model. With these vapor phase composition, we could compute the reference state compositions in the
+   same manner as for detailed chemistry, but in order to evaluate properties at the reference state, we require the composition to be projected onto the manifold. To do this, we start from the
+   detailed species representation of the reference state:
+
+   .. math::
+      Y_{r,i} = \left\{\begin{array}{c l}
+      \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{if $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
+      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
+      \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
+
+   and note that :math:`\xi_i = W_{ij} Y_j`. We note that :math:`Y_{g,i} \: \forall i \in \mathcal{S}_g` can be evaluated from the manifold, but to reduce the number of variables that must be
+   stored/evaluated in the manifold model, we can make some simplifications so we only have to evaluate :math:`Y_{g,i} \: \forall i \in \mathcal{S}_{pc}`. We define
+
+   .. math::
+      Y^{pc}_{g,i} = \left\{\begin{array}{c l}
+      \displaystyle Y_{g,i} & {\text{if $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
+      \displaystyle 0.0 & {\text{otherwise}},
+      \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
+
+   and its complement :math:`Y^{nc}_{g,i}` such that :math:`Y^{pc}_{g,i} + Y^{nc}_{g,i} = Y_{g,i}`, as well as similar definitions for :math:`Y^{nc}_{r,i}`, :math:`Y^{pc}_{r,i}`,
+   :math:`Y^{nc}_{v,i}`, and  :math:`Y^{pc}_{v,i}`.
+
+   Therefore, in order to compute :math:`\xi_{r,j} = W_{ij} Y_{r,j}` from the available data (:math:`\xi_{g,i}`,  :math:`Y^{pc}_{g,i}(\xi_{g,i})`, and :math:`Y^{pc}_{v,i}` ), we note
+   :math:`\xi_{r,j} = W_{ij} (Y^{nc}_{r,j} + Y^{pc}_{r,j})`
 
 Spray Flags and Inputs
 ======================
