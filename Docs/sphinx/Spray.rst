@@ -2,9 +2,9 @@
 
 .. _Spray:
 
-*****
-Spray
-*****
+=======
+ Spray
+=======
 
 Spray Equations
 ===============
@@ -163,7 +163,7 @@ The procedure is as follows for updating the spray droplet:
    .. math::
       Y_{r,i} = \left\{\begin{array}{c l}
       \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{if $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
-      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
+      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{r,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
       \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
 #. The average molar mass, specific heat, and density of the reference state in the gas film are computed as
@@ -340,14 +340,14 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
       Y_{v,i} &= \frac{X_{v,i} M_i}{\overline{M}_v + \overline{M}_g (1 - X_{v,{\rm{sum}}})} \quad \forall\; i \in \mathcal{S}_{pc},
 
    noting that :math:`\overline{M}_g`, the mean molecular weight in the gas phase, must be available as one of the :math:`\phi` that can be evaluated from the manifold, and that molecular weights
-   for the gas phase specied in :math:`\mathcal{S}_{pc}` must also be specified as part of the manifold model. With these vapor phase composition, we could compute the reference state compositions in the
+   for the gas phase species in :math:`\mathcal{S}_{pc}` must also be specified as part of the manifold model. With these vapor phase composition, we could compute the reference state compositions in the
    same manner as for detailed chemistry, but in order to evaluate properties at the reference state, we require the composition to be projected onto the manifold. To do this, we start from the
    detailed species representation of the reference state:
 
    .. math::
       Y_{r,i} = \left\{\begin{array}{c l}
       \displaystyle Y_{v,i} + A (Y_{g,i} - Y_{v,i}) & {\text{if $i \in \mathcal{S}_{pc}$ and $Y_{v,i} > 0$}}, \\
-      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{v,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
+      \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{r,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
       \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
    and note that :math:`\xi_i = W_{ij} Y_j`. We note that :math:`Y_{g,i} \: \forall i \in \mathcal{S}_g` can be evaluated from the manifold, but to reduce the number of variables that must be
@@ -359,11 +359,47 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
       \displaystyle 0.0 & {\text{otherwise}},
       \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
-   and its complement :math:`Y^{nc}_{g,i}` such that :math:`Y^{pc}_{g,i} + Y^{nc}_{g,i} = Y_{g,i}`, as well as similar definitions for :math:`Y^{nc}_{r,i}`, :math:`Y^{pc}_{r,i}`,
-   :math:`Y^{nc}_{v,i}`, and  :math:`Y^{pc}_{v,i}`.
+   and its complement :math:`Y^{nc}_{g,i}` such that :math:`Y^{pc}_{g,i} + Y^{nc}_{g,i} = Y_{g,i}`, as well as similar definitions for :math:`Y^{nc}_{r,i}, Y^{pc}_{r,i},
+   Y^{nc}_{v,i}, \text{and } Y^{pc}_{v,i}`. With these definitions,
 
-   Therefore, in order to compute :math:`\xi_{r,j} = W_{ij} Y_{r,j}` from the available data (:math:`\xi_{g,i}`,  :math:`Y^{pc}_{g,i}(\xi_{g,i})`, and :math:`Y^{pc}_{v,i}` ), we note
-   :math:`\xi_{r,j} = W_{ij} (Y^{nc}_{r,j} + Y^{pc}_{r,j})`
+   .. math::
+      Y^{pc}_{r,i} &=  Y^{pc}_{v,i} + A (Y^{pc}_{g,i} - Y^{pc}_{v,i}), \\
+      Y^{nc}_{r,i} &= \theta Y^{nc}_{g,i}, \\
+      \text{where } \theta &= \frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{r,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}}
+                            = \frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y^{pc}_{r,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y^{pc}_{g,k}}
+
+
+   Therefore, in order to compute :math:`\xi_{r,j} = W_{ij} Y_{r,i}` from the available data :math:`(\xi_{g,j}, Y^{pc}_{g,i}(\xi_{g,j}), \text{and } Y^{pc}_{v,i} )`, we note
+
+   .. math::
+      \xi_{r,j} &= W_{ij} (Y^{pc}_{r,i} + Y^{nc}_{r,i}) = W_{ij} Y^{pc}_{r,i} + W_{ij} \theta Y^{nc}_{g,i}, \text{and} \\
+      \xi_{g,j} &= W_{ij} (Y^{pc}_{g,i} + Y^{nc}_{g,i}) \therefore W_{ij} Y^{nc}_{g,i} = \xi_{g,j} - W_{ij} Y^{pc}_{g,i}.
+
+   We can therefore compute :math:`\xi_{r,j}` from only available data using:
+
+   .. math::
+      \xi_{r,j} =  W_{ij} Y^{pc}_{r,i} + \theta (\xi_{g,j} - W_{ij} Y^{pc}_{g,i} ).
+
+   The present implementation specializes to the case (common in combustion modeling) where the manifold parameters :math:`\xi_j` are either progress variable like :math:`(W_{ij}=0 \; \forall\; i \in \mathcal{S}_{pc})`
+   or mixture fraction like (:math:`W_{ij}=1` for one :math:`i \in \mathcal{S}_{pc}` and :math:`0` for all others).
+
+#. Proceeds as in the ideal gas implementation, but :math:`\bar{M}_r` and :math:`\rho_r` are computed as functions of the manifold :math:`\phi(\xi_j))`.
+   :math:`c_{p,r}` is not computed because the energy equation is not solved.
+
+#. Again, :math:`\mu_r`, :math:`\lambda_r`, and :math:`\rho D_{r,n}`  are computed as functions of the manifold :math:`\phi(\xi_j))`.
+
+#. Diffusion coefficient modification proceeds as in the detailed chemistry case.
+
+#. Momentum source term computation proceeds as in the detailed chemistry case.
+
+#. Mass source term proceeds as in the detailed chemistry case. Energy source term is ignored.
+
+#. Gas phase source terms follow the detailed chemistry implementation, except that the energy/enthalpy equations are ignored and
+
+   .. math::
+      S_{\rho \xi_j} = W_{ij} S_{\rho Y_i} = W_{ij} \mathcal{C} \sum_{n \in \mathcal{S}_L} \mathbf{L}_{i,n}\dot{m}_n \quad \forall\; i \in \mathcal{S}_{g},
+
+
 
 Spray Flags and Inputs
 ======================
@@ -445,7 +481,7 @@ and the *FuelLib-based GCM* are outlined in the subsections below. Please note t
 The source code for the liquid spray properties can be found in ``SprayProperties.H``.
 
 PeleMP Implementation
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 .. table::
 
@@ -510,7 +546,7 @@ PeleMP Implementation
 
 
 FuelLib-Based GCM
-^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~
 
 Currently the *GCM* approach of estimating liquid fuel properties is only available in PeleLMeX and requires:
 
