@@ -245,9 +245,9 @@ The procedure is as follows for updating the spray droplet:
      where
 
      .. math::
-        \phi = \frac{c_{p,r} (\rho D)_r {\rm{Sh}}^*}{\lambda_r {\rm{Nu}}^*}
+        \phi = \frac{c_{p,r}^f (\rho D)_r {\rm{Sh}}^*}{\lambda_r {\rm{Nu}}^*}
 
-     Note the dependence of :math:`{\rm{Nu}}^*` on :math:`B_T` means an iterative scheme is required to solve for both. The droplet vaporization rate and heat transfer become
+     and :math:`c_{p,r}^f` is the heat capacity of the fuel at the reference/skin state temperature. Note the dependence of :math:`{\rm{Nu}}^*` on :math:`B_T` means an iterative scheme is required to solve for both. The droplet vaporization rate and heat transfer become
 
      .. math::
         \dot{m}_n &= -\pi (\rho D)_{r,n}^* d_d {\rm{Sh}}^* \log(1 + B_M). \; \forall\; n \in \mathcal{S}_L,
@@ -776,7 +776,7 @@ The following table details the parameters of each test:
    :align: center
    :figwidth: 45%
 
-   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ Note that all three cases represent a multicomponent fuel with a single liquid-phase and single gas-phase species.  
+   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ Note that all three cases represent a multicomponent fuel with a single liquid-phase and single gas-phase species.
 
 .. [#owen] "PeleMP: The Multiphysics Solver for the Combustion Pele Adaptive Mesh Refinement Code Suite," L. D. Owen, W. Ge, M. Rieth, M. Arienti, L. Esclapez, B. S. Soriano, M. E. Mueller, M. Day, R. Sankaran, and J. H. Chen, J. Fluids Eng., vol. 146, no. 4, pp. 1-18 (2024), doi: `10.1115/1.4064494 <https://doi.org/10.1115/1.4064494>`_.
 
