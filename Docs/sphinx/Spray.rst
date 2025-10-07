@@ -554,7 +554,7 @@ Currently the *GCM* approach of estimating liquid fuel properties is only availa
 
 * Generating a liquid-fuel-specific GCM input file from FuelLib, and copying the input file into the case directory.
 
-   - The process for generating this input file is provided in FuelLib's tutorial: `Exporting GCM Properties for Pele <https://nrel.github.io/FuelLib/tutorials.html#exporting-gcm-properties-for-pele>`_.
+   - The process for generating this input file is provided in FuelLib's tutorial: `Exporting Properties for Pele <https://nrel.github.io/FuelLib/tutorials-export4pele.html>`_.
 
    - An example of using the GCM in Pele is provided in ``PeleLMeX/Exec/RegTests/SingleDropEvap``.
 

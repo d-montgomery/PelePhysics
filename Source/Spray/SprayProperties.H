@@ -41,24 +41,41 @@ template <typename parsedqty>
 static void
 getInpVal(
   parsedqty* val,
-  const amrex::ParmParse& ppp,
+  const amrex::ParmParse& pp,
   const std::string* fuel_names,
   const std::string& varname)
 {
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     const std::string var_read = fuel_names[spf] + "_" + varname;
-    ppp.get(var_read.c_str(), val[spf]);
+    pp.get(var_read.c_str(), val[spf]);
   }
 }
 
 // Base struct for liquid properties
 struct BaseLiqProps
 {
+  std::vector<std::string> fuel_names;
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mw;
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> critT;
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> boilT;
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> latent;
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> latentRef_minus_gasRefH_i;
+
+private:
+  void init_fuel_names()
+  {
+    amrex::ParmParse pp("particles");
+    pp.getarr("fuel_species", fuel_names);
+  }
+
+public:
+  // Constructor to initialize fuel_names
+  BaseLiqProps()
+  {
+    init_fuel_names();
+  }
+
+  
 
   template <typename RealArrayLike>
   AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
@@ -71,9 +88,8 @@ struct BaseLiqProps
     }
 #ifdef PELE_SPRAY_GCM
     {
+      // Check that fuel species molar weights match those in gas-phase mechanism
       amrex::ParmParse pp("particles");
-      std::vector<std::string> fuel_names;
-      pp.getarr("fuel_species", fuel_names);
       amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mw_fl;
       getInpVal(mw_fl.data(), pp, fuel_names.data(), "molar_weight");
       for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
@@ -87,10 +103,15 @@ struct BaseLiqProps
       }
     }
 #endif // PELE_SPRAY_GCM
-#else
-    amrex::Abort("SPRAY_FUEL_NUM > NUM_SPECIES");
-    // Will require mw to be read from input file in many-to-one case
-#endif
+#else // SPRAY_FUEL_NUM > NUM_SPECIES
+#ifdef PELE_SPRAY_GCM
+    // Must read in molecular weights for fuel species not in gas-phase mechanism
+    amrex::ParmParse pp("particles");
+    getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight");
+#else 
+    amrex::Abort("PeleMP liquid props model invalid when SPRAY_FUEL_NUM > NUM_SPECIES");
+#endif // PELE_SPRAY_GCM
+#endif // SPRAY_FUEL_NUM <= NUM_SPECIES
   }
 
   AMREX_GPU_HOST_DEVICE
