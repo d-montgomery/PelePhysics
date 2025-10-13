@@ -216,7 +216,7 @@ m_sprayData->dep_indx.fill(-1);
       std::string gas_spec = spec_names[ns];
       if (gas_spec == m_sprayDepNames[spf]) {
         m_sprayData->dep_indx[spf] = ns;
-        m_sprayData->mtrx_Li[ns][spf] = 1;
+        m_sprayData->mtrx_Li[ns][spf] = 1; // TODO: Remvove this after testing
       }
     }
     if (m_sprayData->dep_indx[spf] < 0) {
@@ -232,6 +232,7 @@ m_sprayData->dep_indx.fill(-1);
     }
   }
 
+  // CSR representation of mapping matrix L
   int nnz = 0; // number of non-zeros
   m_sprayData->L_row[0] = 0;
   for (int ns = 0; ns < NUM_SPECIES; ++ns) {
@@ -243,6 +244,13 @@ m_sprayData->dep_indx.fill(-1);
       }
       m_sprayData->L_row[ns + 1] = nnz;
   }
+
+  // Set of phase change species
+  int tmp_pc_indx[NUM_SPECIES];
+  m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
+  m_sprayData->pc_indx = (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
+  amrex::Gpu::copy(amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc, m_sprayData->pc_indx);
+
   // DEBUG PRINT STATEMENTS ---------------------------------------------------
   amrex::Print() << "\nGas Species: ";
   for (int ns = 0; ns < NUM_SPECIES; ++ns) {
@@ -259,6 +267,10 @@ m_sprayData->dep_indx.fill(-1);
   amrex::Print() << "\ndep_indx = ";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     amrex::Print() << m_sprayData->dep_indx[spf] << " ";
+  }
+  amrex::Print() << "\npc_indx = ";
+  for (int spf = 0; spf < m_sprayData->N_pc; ++spf) {
+    amrex::Print() << m_sprayData->pc_indx[spf] << " ";
   }
   amrex::Print() << "\n Spray fuel species mapping to gas phase species: \n";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {

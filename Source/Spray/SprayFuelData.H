@@ -96,6 +96,8 @@ struct SprayData
   amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, NUM_SPECIES> mtrx_Li{};
   amrex::GpuArray<int, NUM_SPECIES + 1> L_row{};
   amrex::GpuArray<int, SPRAY_FUEL_NUM> L_col{};
+  int N_pc = 0;
+  int* pc_indx = nullptr;
 
   // Instance of the liquid properties for the specified model
   pele::physics::SprayProps::LiqPropType liqprops;
@@ -127,7 +129,8 @@ struct SprayData
       cBoilT[spf] = amrex::min(liqprops.critT_i(spf), cBoilT[spf]);
     }
   }
-// Compute the dot product of the i-th row of a binary CSR matrix L with vector x.
+
+  // Compute the dot product of the i-th row of a binary CSR matrix L with vector x.
   template <typename IntArrayLike, typename IntArrayLike2, typename RealArrayLike>
   AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
   amrex::Real binary_csr_rowdotprod(int i,
@@ -160,6 +163,21 @@ struct SprayData
           y[i] = sum;
       }
   } 
+
+  // Return an ordered vector of unique nonzero row indices in a CSR matrix.
+  template <typename IntArrayLike>
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+  int binary_csr_nonzerorows(const IntArrayLike& row_ptr, int* nonzero_rows)
+  {
+      int num_rows = row_ptr.size() - 1;
+      int nnzrows = 0;
+      for (int i = 0; i < num_rows; ++i) {
+          if (row_ptr[i + 1] > row_ptr[i]) {
+              nonzero_rows[nnzrows++] = i;
+          }
+      }
+      return nnzrows;
+  }
 };
 
 #endif
