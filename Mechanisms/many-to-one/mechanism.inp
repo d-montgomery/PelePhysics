@@ -1,0 +1,16 @@
+!****************************************************************************
+!
+! A 6-species non-reacting mechanism for testing many-to-one evaporation models.
+!
+!****************************************************************************
+ELEMENTS
+O  H  C  N  AR  HE
+END       
+
+SPECIES             
+NC7H16           NC7H16_1         NC10H22          NC10H22_1
+O2               N2                             
+END
+
+REACTIONS
+END
