@@ -62,12 +62,12 @@ struct BaseLiqProps
 
   template <typename RealArrayLike>
   AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-  init_mw(const RealArrayLike& mw_gas, const int* indx)
+  init_mw(const RealArrayLike& mw_gas, const int* dep_indx)
   {
 #if SPRAY_FUEL_NUM <= NUM_SPECIES
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      const int fspec = indx[spf];
-      mw[spf] = mw_gas[fspec] * SprayUnits::mass_conv;
+      const int fdspec = dep_indx[spf];
+      mw[spf] = mw_gas[fdspec] * SprayUnits::mass_conv;
     }
 #ifdef PELE_SPRAY_GCM
     {

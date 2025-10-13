@@ -92,8 +92,10 @@ struct SprayData
   // If particle is updated half dt or whole dt
   amrex::Real dtmod = 0.5;
   amrex::RealVect body_force = amrex::RealVect::TheZeroVector();
-  amrex::GpuArray<int, SPRAY_FUEL_NUM> indx = {{-1}};
-  amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_indx = {{-1}};
+  amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_indx{};
+  amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, NUM_SPECIES> mtrx_Li{};
+  amrex::GpuArray<int, NUM_SPECIES + 1> L_row{};
+  amrex::GpuArray<int, SPRAY_FUEL_NUM> L_col{};
 
   // Instance of the liquid properties for the specified model
   pele::physics::SprayProps::LiqPropType liqprops;
@@ -125,6 +127,39 @@ struct SprayData
       cBoilT[spf] = amrex::min(liqprops.critT_i(spf), cBoilT[spf]);
     }
   }
+// Compute the dot product of the i-th row of a binary CSR matrix L with vector x.
+  template <typename IntArrayLike, typename IntArrayLike2, typename RealArrayLike>
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+  amrex::Real binary_csr_rowdotprod(int i,
+                      const IntArrayLike& row_ptr,
+                      const IntArrayLike2& col_idx,
+                      const RealArrayLike& x)
+  {
+      amrex::Real sum = 0.;
+      for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
+          sum += x[col_idx[j]];
+      }
+      return sum;
+  }
+
+  // Compute the matrix product of a binary CSR matrix L with vector x.
+  template <typename IntArrayLike, typename IntArrayLike2, typename RealArrayLike, typename RealArrayLike2>
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+  void binary_csr_matvecmult(
+      int num_rows,
+      const IntArrayLike& row_ptr,
+      const IntArrayLike2& col_idx,
+      const RealArrayLike& x,
+      RealArrayLike2& y)
+  {
+      for (int i = 0; i < num_rows; ++i) {
+          amrex::Real sum = 0.;
+          for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
+              sum += x[col_idx[j]];
+          }
+          y[i] = sum;
+      }
+  } 
 };
 
 #endif
