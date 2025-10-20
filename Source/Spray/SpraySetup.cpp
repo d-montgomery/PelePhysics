@@ -272,9 +272,9 @@ m_sprayData->dep_indx.fill(-1);
   for (int spf = 0; spf < m_sprayData->N_pc; ++spf) {
     amrex::Print() << m_sprayData->pc_indx[spf] << " ";
   }
-  amrex::Print() << "\n Spray fuel species mapping to gas phase species: \n";
+  amrex::Print() << "\n Spray fuel species mapping to gas phase species: ";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << "  Spray fuel species " << spf << ": " << m_sprayFuelNames[spf]
+    amrex::Print() << "\n  Spray fuel species " << spf << ": " << m_sprayFuelNames[spf]
                  << "\n     mapped to gas species " << m_sprayData->dep_indx[spf] << ": " << spec_names[m_sprayData->dep_indx[spf]] 
                  << "\n     dep_indx[" << spf << "] = " << m_sprayData->dep_indx[spf];
   }

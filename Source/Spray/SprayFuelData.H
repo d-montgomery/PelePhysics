@@ -136,7 +136,7 @@ struct SprayData
   amrex::Real binary_csr_rowdotprod(int i,
                       const IntArrayLike& row_ptr,
                       const IntArrayLike2& col_idx,
-                      const RealArrayLike& x)
+                      const RealArrayLike& x) const
   {
       amrex::Real sum = 0.;
       for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
@@ -145,15 +145,15 @@ struct SprayData
       return sum;
   }
 
-  // Compute the matrix product of a binary CSR matrix L with vector x.
+  // Compute the matrix-vector product Lx = y provided a binary CSR matrix L
   template <typename IntArrayLike, typename IntArrayLike2, typename RealArrayLike, typename RealArrayLike2>
   AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
   void binary_csr_matvecmult(
-      int num_rows,
+      const int num_rows,
       const IntArrayLike& row_ptr,
       const IntArrayLike2& col_idx,
       const RealArrayLike& x,
-      RealArrayLike2& y)
+      RealArrayLike2& y) const
   {
       for (int i = 0; i < num_rows; ++i) {
           amrex::Real sum = 0.;
