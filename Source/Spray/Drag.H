@@ -310,11 +310,11 @@ calculateSpraySource(
     get_lambda = false;
   }
   amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_skin {};
+  amrex::GpuArray<amrex::Real, NUM_SPECIES> rhoD_ri {};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> L_n {};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mn_dot {};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_part {}; // Liquid mass fractions
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> oldY_part {}; // Previous liquid mass fracs
-  amrex::GpuArray<amrex::Real, NUM_SPECIES> rhoD_ri {};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vn {};
   const amrex::Real num_ppp = p.rdata(SprayComps::pstateNumDens);
   amrex::RealVect vel_part(AMREX_D_DECL(
@@ -617,7 +617,7 @@ calculateSpraySource(
     amrex::Real newY = fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, Y_part);
     amrex::Real midot =
       (newY * pmass - oldY_part_pc * startmass) / (fdat.dtmod * flow_dt);
-    gpv.fluid_Y_dot[pc] = num_ppp * midot;
+    gpv.fluid_Y_dot[pcspec] = num_ppp * midot;
     amrex::Print() << "   gpv.fluid_Ydot[" << pc << "] = " << gpv.fluid_Y_dot[pc] << "\n";
     amrex::Print() << "      newY = " << newY
                    << "\n      pmass = " << pmass
