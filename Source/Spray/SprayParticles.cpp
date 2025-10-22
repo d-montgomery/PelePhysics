@@ -437,9 +437,10 @@ SprayParticleContainer::updateParticles(
             if (fdat->mass_trans) {
               Gpu::Atomic::Add(
                 &rhoSrcarr(cur_indx), cur_coef * gpv.fluid_mass_src);
-              for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+              for (int pc = 0; pc < fdat->N_pc; ++pc) {
+                const int pcspec = fdat->pc_indx[pc];
                 Gpu::Atomic::Add(
-                  &rhoYSrcarr(cur_indx, spf), cur_coef * gpv.fluid_Y_dot[spf]);
+                  &rhoYSrcarr(cur_indx, pcspec), cur_coef * gpv.fluid_Y_dot[pcspec]);
               }
             }
             Gpu::Atomic::Add(

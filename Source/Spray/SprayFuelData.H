@@ -56,7 +56,7 @@ struct GasPhaseVals
   amrex::GpuArray<amrex::Real, NUM_SPECIES> mw;
   amrex::RealVect fluid_mom_src;
   amrex::Real fluid_mass_src;
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> fluid_Y_dot;
+  amrex::GpuArray<amrex::Real, NUM_SPECIES> fluid_Y_dot;
   amrex::Real fluid_eng_src;
 
   AMREX_GPU_DEVICE AMREX_FORCE_INLINE void reset()
@@ -70,7 +70,7 @@ struct GasPhaseVals
     for (int n = 0; n < NUM_SPECIES; ++n) {
       Y_fluid[n] = 0.;
     }
-    for (int n = 0; n < SPRAY_FUEL_NUM; ++n) {
+    for (int n = 0; n < NUM_SPECIES; ++n) {
       fluid_Y_dot[n] = 0.;
     }
   }
