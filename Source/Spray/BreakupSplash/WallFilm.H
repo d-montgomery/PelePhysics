@@ -52,11 +52,11 @@ calculateFilmSource(
   amrex::GpuArray<amrex::Real, NUM_SPECIES> h_film;
   amrex::GpuArray<amrex::Real, NUM_SPECIES> cp_n;
   amrex::GpuArray<amrex::Real, NUM_SPECIES> Ddiag;
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> L_fuel = {{0.0}};
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mi_dot = {{0.0}};
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> L_n = {{0.0}};
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mn_dot = {{0.0}};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_film = {
     {0.0}}; // Liquid mass fractions
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vapor = {{0.0}};
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vn = {{0.0}};
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     Y_film[spf] = p.rdata(SprayComps::pstateY + spf);
   }
@@ -93,7 +93,7 @@ calculateFilmSource(
   amrex::Real sumXVap = 0.; // Sum of X_v
   calcVaporState<pele::physics::PhysicsType::eos_type>()(
     fdat, gpv, rule, T_film, C_eps, mw_film, Y_film.data(), T_skin, cBoilT,
-    Y_skin.data(), X_vapor.data(), L_fuel.data(), B_M, sumXVap, cp_skin,
+    Y_skin.data(), X_vn.data(), L_n.data(), B_M, sumXVap, cp_skin,
     mw_skin);
   amrex::Real lambda_skin = 0.;
   amrex::Real mu_skin = 0.;
@@ -132,12 +132,12 @@ calculateFilmSource(
       // Convert mass diffusion coefficient from mixture average
       // to binary for fuel only, not concerned with other species
       Ddiag[fdspec] *= mw_skin / gpv.mw[fdspec] * SprayUnits::rhod_conv;
-      if (X_vapor[spf] > 0.) {
+      if (X_vn[spf] > 0.) {
         // Normalize mass diffusivity by fuel vapor molar fraction
-        amrex::Real cur_rhoD = X_vapor[spf] * Ddiag[fdspec] / sumXVap;
-        mi_dot[spf] = -amrex::max(h_mass * std::pow(cur_rhoD, 2. / 3.), 0.);
-        m_dot += mi_dot[spf];
-        sumL += mi_dot[spf] * L_fuel[spf];
+        amrex::Real cur_rhoD = X_vn[spf] * Ddiag[fdspec] / sumXVap;
+        mn_dot[spf] = -amrex::max(h_mass * std::pow(cur_rhoD, 2. / 3.), 0.);
+        m_dot += mn_dot[spf];
+        sumL += mn_dot[spf] * L_n[spf];
       }
     }
     amrex::Real part_temp_src =
@@ -154,7 +154,7 @@ calculateFilmSource(
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           Y_film[spf] = amrex::min(
             1., amrex::max(
-                  (Y_film[spf] * film_mass + mi_dot[spf] * dt) / new_mass, 0.));
+                  (Y_film[spf] * film_mass + mn_dot[spf] * dt) / new_mass, 0.));
           if (Y_film[spf] < 1.E-12) {
             Y_film[spf] = 0.;
           }
@@ -177,9 +177,9 @@ calculateFilmSource(
   gpv.fluid_mass_src = mdot_total;
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     const int fdspec = fdat.dep_indx[spf];
-    amrex::Real oldY = p.rdata(SprayComps::pstateY + spf);
+    amrex::Real oldY_part = p.rdata(SprayComps::pstateY + spf);
     amrex::Real newY = Y_film[spf];
-    amrex::Real midot = (newY * film_mass - oldY * start_mass) / dt;
+    amrex::Real midot = (newY * film_mass - oldY_part * start_mass) / dt;
     gpv.fluid_Y_dot[spf] = midot;
     p.rdata(SprayComps::pstateY + spf) = newY;
     gpv.fluid_eng_src += midot * h_film[fdspec];
