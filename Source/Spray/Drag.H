@@ -71,12 +71,22 @@ struct calcVaporState
   {
     auto eos = pele::physics::PhysicsType::eos(fdat.eosparm);
     amrex::Real h_gas[NUM_SPECIES];
+    amrex::Real mw_gas[NUM_SPECIES];
     eos.T2Hi(T_in, h_gas);
+    eos.molecular_weight(mw_gas);
 
+    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_dn{};
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
+      X_dn[spf] = Y_l[spf] * mw_part / mw_ln;
+    }
+
+    // Estimate X_{v,n} = X_vapor from the liquid state
+    amrex::Print() << "Vapor Mole Fractions (spray-species):\n";
     amrex::Real mbar_vap = 0.; // Average molar mass of evaporated fuel in vapor
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fdspec = fdat.dep_indx[spf];
-      const amrex::Real mw_li = fdat.liqprops.mw_i(spf);
+      const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
       amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
 
       // Compute latent heat
@@ -85,56 +95,82 @@ struct calcVaporState
       L_fuel[spf] = part_latent;
       amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
 
-      amrex::Real X_fluid = gpv.Y_fluid[fdspec] * gpv.mw_mix / mw_li;
-      if (pres_sat > X_fluid * gpv.p_fluid) {
-        amrex::Real Xl = Y_l[spf] * mw_part / mw_li;
-        amrex::Real Xv = Xl * pres_sat / gpv.p_fluid;
-        mbar_vap += Xv * mw_li;
+      amrex::Real X_gi = gpv.Y_fluid[fdspec] * gpv.mw_mix / (mw_gas[fdspec] * SprayUnits::mass_conv);
+      amrex::Real sumXdn_SLi = fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_dn);
+      amrex::Real X_gn = X_dn[spf] * X_gi;
+      if (sumXdn_SLi > X_dn[spf]){
+        // Multiple species deposit to fdspec, scale accordingly
+        X_gn /= sumXdn_SLi;
+      }
+      if (pres_sat > X_gn * gpv.p_fluid) {
+        amrex::Real Xv = X_dn[spf] * pres_sat / gpv.p_fluid;
+        mbar_vap += Xv * mw_ln;
         sumXVap += Xv;
         X_vapor[spf] = Xv;
       } else {
         X_vapor[spf] = 0.;
       }
+      amrex::Print() << "   X_vn[" << spf << "] = " << X_vapor[spf] << "\n";
     }
+
+    // Collapse vapor state X_{v,n} on to dependent gas species X_{v,i} = X_vapor_gas
+    amrex::Print() << "Vapor Mole Fractions (gas-species):\n";
+    amrex::GpuArray<amrex::Real, NUM_SPECIES> X_vi{};
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+      const int pcspec = fdat.pc_indx[pc];
+      X_vi[pcspec] = fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, X_vapor);
+      amrex::Print() << "   X_vi[" << pcspec << "] = " << X_vi[pcspec] << "\n";
+    }
+
+    // Mass fractions in vapor state
+    amrex::Print() << "Vapor Mass Fractions (gas-species):\n";
     amrex::Real totalmwx = mbar_vap + (1. - sumXVap) * gpv.mw_mix;
+    amrex::Print() << "   totalmwx = " << totalmwx << "\n";
     amrex::Real sumYSkin =
       0.; // Mass fraction of fuel in the modeled skin phase
     amrex::Real sumYfFluid = 0.; // Mass fraction of fuel in the gas phase
     amrex::Real sumYVap = 0.;    // Mass fraction of fuel in the vapor phase
-    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Yfv{0.0};
-    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      if (X_vapor[spf] > 0.) {
-        const amrex::Real mw_li = fdat.liqprops.mw_i(spf);
-        Yfv[spf] = X_vapor[spf] * mw_li / totalmwx;
-        sumYVap += Yfv[spf];
+    amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_vi {};
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+      const int pcspec = fdat.pc_indx[pc];
+      if (X_vi[pcspec] > 0.) {
+        const amrex::Real mw_i = mw_gas[pcspec] * SprayUnits::mass_conv;
+        Y_vi[pcspec] = X_vi[pcspec] * mw_i / totalmwx;
+        amrex::Print() << "   Y_vi[" << pcspec << "] = " << Y_vi[pcspec] << "\n";
+        sumYVap += Y_vi[pcspec];
       }
     }
-    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      if (X_vapor[spf] > 0.) {
-        const int fdspec = fdat.dep_indx[spf];
-        amrex::Real gasY = gpv.Y_fluid[fdspec];
-        // If multiple species share a dep spec, split gas phase across them
-        // in proportion to their contribution at equilibrium
-        if (fdat.liquid_spec_share_gas_dep) {
-          amrex::Real Yvap_sum = 0.0;
-          for (int spf2 = 0; spf2 < SPRAY_FUEL_NUM; ++spf2) {
-            if (fdat.dep_indx[spf2] == fdspec) {
-              Yvap_sum += Yfv[spf2];
-            }
-          }
-          gasY *= (Yfv[spf] / Yvap_sum);
-        }
-        sumYfFluid += gasY;
-        amrex::Real Ysk = Yfv[spf] + rule * (gasY - Yfv[spf]);
-        Y_skin[fdspec] = Ysk;
-        sumYSkin += Ysk;
+
+    amrex::Print() << "Skin Fractions\n";
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+      const int pcspec = fdat.pc_indx[pc];
+      if (X_vi[pcspec] > 0.) {
+        amrex::Real Y_gi = gpv.Y_fluid[pcspec];
+        //// If multiple species share a dep spec, split gas phase across them
+        //// in proportion to their contribution at equilibrium
+        //if (fdat.liquid_spec_share_gas_dep) {
+        //  amrex::Real Yvap_sum = 0.0;
+        //  for (int spf2 = 0; spf2 < SPRAY_FUEL_NUM; ++spf2) {
+        //    if (fdat.dep_indx[spf2] == fdspec) {
+        //      Yvap_sum += Y_vi[spf2];
+        //    }
+        //  }
+        //  gasY *= (Y_vi[spf] / Yvap_sum);
+        //}
+        sumYfFluid += Y_gi;
+        amrex::Real Y_ri = Y_vi[pcspec] + rule * (Y_gi - Y_vi[pcspec]);
+        Y_skin[pcspec] = Y_ri;
+        sumYSkin += Y_ri;
+        amrex::Print() << "   Y_gi[" << pcspec << "] = " << Y_gi << "\n";
+        amrex::Print() << "   Y_skin[" << pcspec << "] = " << Y_skin[pcspec] << "\n";
       }
     }
+
     // Normalize skin mass fractions to ensure they sum to 1
     amrex::Real renorm = (1. - sumYSkin) / (1. - sumYfFluid);
-    for (int n = 0; n < NUM_SPECIES; ++n) {
-      if (Y_skin[n] == 0.) {
-        Y_skin[n] = gpv.Y_fluid[n] * renorm;
+    for (int ns = 0; ns < NUM_SPECIES; ++ns) {
+      if (Y_skin[ns] == 0.) {
+        Y_skin[ns] = gpv.Y_fluid[ns] * renorm;
       }
     }
     // eos and unit conversions
@@ -205,7 +241,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
 
     // Y_{g,i}^{pc}  is already stored in  gpv.Yspec_fluid
     // Calculate Y_{v,i}, Y_{r,i}^{pc}, and sum Y_{r,i}^{pc}
-    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Yfv{0.0};
+    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_vi{0.0};
     amrex::Real sumYVap = 0.0;
     amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_ri_pc{0.0};
     amrex::Real sumYripc = 0.0;
@@ -214,9 +250,9 @@ struct calcVaporState<pele::physics::eos::Manifold>
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       if (X_vapor[spf] > 0.) {
         const amrex::Real mw_li = fdat.liqprops.mw_i(spf);
-        Yfv[spf] = X_vapor[spf] * mw_li / totalmwx;
-        sumYVap += Yfv[spf]; //\sigma Y_{v,k}^{pc} in the document
-        Y_ri_pc[spf] = Yfv[spf] + rule * (gpv.Yspec_fluid[spf] - Yfv[spf]);
+        Y_vi[spf] = X_vapor[spf] * mw_li / totalmwx;
+        sumYVap += Y_vi[spf]; //\sigma Y_{v,k}^{pc} in the document
+        Y_ri_pc[spf] = Y_vi[spf] + rule * (gpv.Yspec_fluid[spf] - Y_vi[spf]);
         sumYripc += Y_ri_pc[spf];         //\sigma Y_{r,k}^{pc} in the document
         sumYgipc += gpv.Yspec_fluid[spf]; //\sigma Y_{g,k}^{pc} in the document
       }
@@ -422,23 +458,28 @@ calculateSpraySource(
       amrex::Real Nu_num = 0.;
       amrex::Real sumL = 0.;
       amrex::Real Nu_0 = 1. + powR * std::cbrt(1. + Reyn * Pr_skin);
+      amrex::Print() << "Mass Transfer:\n";
       // If gas phase is not saturated
       if (sumXVap > 0.) {
         amrex::Real rhoDtotal = 0.;
         amrex::Real cp_fuel = 0.;
         amrex::Real sumYSkin = 0.;
-        for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-          const int fdspec = fdat.dep_indx[spf];
+        for (int pc = 0; pc < fdat.N_pc; ++pc) {
+          const int pcspec = fdat.pc_indx[pc];
           // Convert mass diffusion coefficient from mixture average
           // to binary for fuel only, not concerned with other species
-
-          Ddiag[fdspec] *= mw_skin / gpv.mw[fdspec] * SprayUnits::rhod_conv;
+          Ddiag[pcspec] *= mw_skin / gpv.mw[pcspec] * SprayUnits::rhod_conv;
           // Get normalized vapor molar fraction
-          amrex::Real X_norm = X_vapor[spf] / sumXVap;
-          Ddiag[fdspec] *= X_norm;
-          rhoDtotal += Ddiag[fdspec];
-          sumYSkin += Y_skin[fdspec];
+          amrex::Real X_vi = fdat.binary_csr_rowdotprod(
+            pcspec, fdat.L_row, fdat.L_col, X_vapor.data());
+          amrex::Real X_norm = X_vi / sumXVap;
+          Ddiag[pcspec] *= X_norm;
+          amrex::Print() << "   (rhoD)_{r," << pcspec << "} = " << Ddiag[pcspec] << "\n";
+          rhoDtotal += Ddiag[pcspec];
+          sumYSkin += Y_skin[pcspec];
         }
+        amrex::Print() << "   Total (rhoD)_r = " << rhoDtotal << "\n";
+        amrex::Print() << "   Sum Y_skin = " << sumYSkin << "\n";
 
 #ifndef USE_MANIFOLD_EOS
         amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_fuel_skin;
@@ -460,18 +501,34 @@ calculateSpraySource(
         amrex::Real Sh_num = 2. + (Sh_0 - 2.) * invFM;
         amrex::Real mdotcoeff = M_PI * dia_part * Sh_num * logB;
         amrex::Real ratio = cp_fuel * Sh_num * rhoDtotal / lambda_skin;
+        amrex::Print() << "   Sh_num = " << Sh_num << "\n";
+        amrex::Print() << "   dia_part = " << dia_part << "\n";
+        amrex::Print() << "   logB = " << logB << "\n";
+        amrex::Print() << "   mdotcoeff = " << mdotcoeff << "\n";
 
         Nu_num = calcHeatCoeff(ratio, B_M, B_eps, C_eps, Nu_0);
 
+        amrex::GpuArray<amrex::Real, NUM_SPECIES> L_fuel_pc {};
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           // Species index
           const int fdspec = fdat.dep_indx[spf];
           if (X_vapor[spf] > 0.) {
             mi_dot[spf] = -amrex::max(Ddiag[fdspec] * mdotcoeff, 0.);
-            m_dot += mi_dot[spf];
-            sumL += mi_dot[spf] * L_fuel[spf];
+            L_fuel_pc[fdspec] = L_fuel[spf];
+            //m_dot += mi_dot[spf];
+            //sumL += mi_dot[spf] * L_fuel[spf];
+            amrex::Print() << "   Ddiag[" << fdspec << "] = " << Ddiag[fdspec] << "\n";
+            amrex::Print() << "   mi_dot[" << spf << "] = " << mi_dot[spf] << "\n";
+            amrex::Print() << "   L_fuel[" << spf << "] = " << L_fuel[spf] << "\n";
           }
         }
+        for (int pc = 0; pc < fdat.N_pc; ++pc) {
+          const int pcspec = fdat.pc_indx[pc];
+          m_dot += -amrex::max(Ddiag[pcspec] * mdotcoeff, 0.);
+          sumL += m_dot * L_fuel_pc[pcspec];
+        }
+        amrex::Print() << "   m_dot = " << m_dot << "\n";
+        amrex::Print() << "   sumL = " << sumL << "\n";
       } else {
         // Still do convective heat transfer for saturated gas
         Nu_num = Nu_0;
@@ -518,6 +575,7 @@ calculateSpraySource(
             1.,
             amrex::max(
               0., (Y_part[spf] * pmass + mi_dot[spf] * part_dt) / new_mass));
+          amrex::Print() << "   Updated Y_part[" << spf << "] = " << Y_part[spf] << "\n";
           if (Y_part[spf] <= 1.E-12) {
             Y_part[spf] = 0.;
           }
@@ -561,6 +619,8 @@ calculateSpraySource(
   amrex::Real h_gas[NUM_SPECIES];
   eos.T2Hi(T_part, h_gas);
 #endif
+  amrex::Print() << "Source Terms:\n";
+  amrex::Print() << "   num_ppp = " << num_ppp << "\n";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     const int fdspec = fdat.dep_indx[spf];
     amrex::Real oldY = p.rdata(SprayComps::pstateY + spf);
@@ -568,6 +628,16 @@ calculateSpraySource(
     amrex::Real midot =
       (newY * pmass - oldY * startmass) / (fdat.dtmod * flow_dt);
     gpv.fluid_Y_dot[spf] = num_ppp * midot;
+    amrex::Print() << "   gpv.fluid_Ydot[" << spf << "] = " << gpv.fluid_Y_dot[spf] << "\n";
+    amrex::Print() << "      newY = " << newY
+                   << "\n      pmass = " << pmass
+                   << "\n      oldY = " << oldY 
+                   << "\n      startmass = " << startmass 
+                   << "\n      dtmod = " << fdat.dtmod
+                   << "\n      flow_dt = " << flow_dt
+                   << "\n      midot = " << midot << "\n";
+                  
+
 #ifdef USE_MANIFOLD_EOS
     gpv.fluid_eng_src = 0.0;
 #else
@@ -575,6 +645,7 @@ calculateSpraySource(
 #endif
     p.rdata(SprayComps::pstateY + spf) = Y_part[spf];
   }
+  amrex::Print() << "gpv.fluid_eng_src = " << gpv.fluid_eng_src << "\n";
   AMREX_D_TERM(p.rdata(SprayComps::pstateVel) = vel_part[0];
                , p.rdata(SprayComps::pstateVel + 1) = vel_part[1];
                , p.rdata(SprayComps::pstateVel + 2) = vel_part[2];);

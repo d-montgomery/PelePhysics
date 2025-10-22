@@ -297,22 +297,6 @@ m_sprayData->dep_indx.fill(-1);
   }
   amrex::Print() << "\n";
 
-  amrex::Print() << "\n Test csr dot product" << "\n";
-  amrex::GpuArray<Real, SPRAY_FUEL_NUM> x{};
-  x[0] = 0.25; 
-  x[1] = 0.25;
-  x[2] = 0.25;
-  x[3] = 0.25;
-  for (int ns = 0; ns < NUM_SPECIES; ++ns) {
-    amrex::Print() << "   L_" << ns << " . X = " << m_sprayData->binary_csr_rowdotprod(ns, m_sprayData->L_row, m_sprayData->L_col, x) << "\n";
-  }
-  amrex::Print() << "\n Test csr matvecmult" << "\n";
-  amrex::GpuArray<Real, NUM_SPECIES> y{};
-  m_sprayData->binary_csr_matvecmult(NUM_SPECIES, m_sprayData->L_row, m_sprayData->L_col, x, y);
-  for (int ns = 0; ns < NUM_SPECIES; ++ns) {
-    amrex::Print() << "   Y[" << ns << "] = " << y[ns] << "\n";
-  }
-  amrex::Print() << "\n";
   // END DEBUG PRINT STATEMENTS ------------------------------------------------
 #else
   m_sprayData->dep_indx[0] = 0;
