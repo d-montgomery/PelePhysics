@@ -70,7 +70,7 @@ The corresponding sets are:
    \mathcal{S}_{L,1} &= \{2\}, \\
    \mathcal{S}_{L,2} &= \emptyset.
 
-In the case where :math:`N_L = N_g` and each liquid species contributes to a unique gas-phase species, :math:`\mathbf{L}` is the identity matrix.
+In the PelePhysics implementation, these sets are accessed through matrix operations using the mapping matrix :math:`\mathbf{L}`, which is stored in compressed sparse row (CSR) format.
 
 Additional nomenclature: :math:`M_n` is the molar mass of species :math:`n`, :math:`\overline{M}` is the average molar mass of a mixture, and :math:`\mathcal{R}` is the universal gas constant.  :math:`Y_{g,i}` and :math:`X_{g,i}` are the mass and molar fractions of gas-phase species :math:`i`, and :math:`Y_{d,n}` and :math:`X_{d,n}` are the mass and molar fractions of liquid-phase droplet species :math:`n`, respectively.
 The user is required to provide a reference temperature for the liquid properties, :math:`T^*`, the critical temperature for each liquid species, :math:`T_{c,n}`, the boiling temperature for each liquid species at atmospheric pressure, :math:`T^*_{b,n}`, the latent heat and liquid specific heat at the reference temperature, :math:`h_{L,n}(T^*)` and :math:`c_{p,L,n}(T^*)`, respectively.
@@ -153,11 +153,6 @@ The procedure is as follows for updating the spray droplet:
    .. math::
       X_{g,n} = \frac{X_{d,n}}{\sum_{k \in \mathcal{S}_{L,i}} X_{d,k}} X_{g,i} \quad \forall\; n \in \mathcal{S}_{L,i}, \; i \in \mathcal{S}_{pc} .
 
-   An alternative strategy is to instead set the condition for all gas species :math:`n` dependent on liquid species :math:`i` if :math:`X_{g,i} p_g > \bar{p}_{\rm{sat},i}` where
-
-   .. math::
-      \bar{p}_{\rm{sat},i} = \frac{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n} p_{\rm{sat},n}}{\sum_{n \in \mathcal{S}_{L,i}} X_{d,n}} \quad \forall\; i \in \mathcal{S}_{pc}.
-
    The mass fractions in the reference state for the fuel are computed using the one-third rule and the remaining reference mass fractions are normalized gas phase mass fractions to ensure they sum to 1
 
    .. math::
@@ -190,7 +185,7 @@ The procedure is as follows for updating the spray droplet:
    which can be consistently distributed across liquid species in the many-to-one case:
 
    .. math::
-      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in \mathcal{S}_{L,i} \quad \forall i \in \mathcal{S}_{pc}
+      (\rho D)^*_{r,n} = \frac{X_{v,n}}{X_{v,i}} (\rho D)^*_{r,i}  \quad \forall n \in \mathcal{S}_{L,i} \quad \forall\; i \in \mathcal{S}_{pc}
 
    (further investigation needed to determine if molecular weight scaling is also needed here). The total is
 
@@ -266,7 +261,7 @@ The procedure is as follows for updating the spray droplet:
     .. math::
        S_{\rho} &= \mathcal{C} \sum_{n \in \mathcal{S}_L} \dot{m}_n,
 
-       S_{\rho Y_i} &= \mathcal{C} \sum_{n \in \mathcal{S}_L} \mathbf{L}_{i,n}\dot{m}_n \quad \forall\; i \in \mathcal{S}_{g},
+       S_{\rho Y_i} &= \mathcal{C} \sum_{n \in \mathcal{S}_{L,i}} \dot{m}_n \quad \forall\; i \in \mathcal{S}_{pc},
 
        \mathbf{S}_{\rho \mathbf{u}} &= \mathcal{C} \mathbf{F}_d,
 
@@ -350,8 +345,8 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
       \displaystyle\frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{r,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y_{g,k}} Y_{g,i} & {\text{otherwise}},
       \end{array}\right. \quad \forall\; i \in \mathcal{S}_g.
 
-   and note that :math:`\xi_i = W_{ij} Y_j`. We note that :math:`Y_{g,i} \: \forall i \in \mathcal{S}_g` can be evaluated from the manifold, but to reduce the number of variables that must be
-   stored/evaluated in the manifold model, we can make some simplifications so we only have to evaluate :math:`Y_{g,i} \: \forall i \in \mathcal{S}_{pc}`. We define
+   and note that :math:`\xi_i = W_{ij} Y_j`. We note that :math:`Y_{g,i} \: \forall\; i \in \mathcal{S}_g` can be evaluated from the manifold, but to reduce the number of variables that must be
+   stored/evaluated in the manifold model, we can make some simplifications so we only have to evaluate :math:`Y_{g,i} \: \forall\; i \in \mathcal{S}_{pc}`. We define
 
    .. math::
       Y^{pc}_{g,i} = \left\{\begin{array}{c l}
@@ -774,9 +769,9 @@ The following table details the parameters of each test:
 
 .. figure:: /Visualization/runge_jp8_res_2025.png
    :align: center
-   :figwidth: 45%
+   :figwidth: 85%
 
-   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ Note that all three cases represent a multicomponent fuel with a single liquid-phase and single gas-phase species.
+   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ This demonstrates three different approaches: (i) A detailed non-reacting mechanism with 67 species in the liquid and gas phases, (ii) a single liquid species and corresponding single Hychem gas species, where the thermophysical properties of the liquid species are estimated using FuelLib's mixture properties, and (iii) a many-to-one mapping where 67 liquid species evaporate to a single Hychem gas species. The many-to-one cases for PeleGCM and PeleMP with Antoine fit are indistinguishable on this plot. 
 
 .. [#owen] "PeleMP: The Multiphysics Solver for the Combustion Pele Adaptive Mesh Refinement Code Suite," L. D. Owen, W. Ge, M. Rieth, M. Arienti, L. Esclapez, B. S. Soriano, M. E. Mueller, M. Day, R. Sankaran, and J. H. Chen, J. Fluids Eng., vol. 146, no. 4, pp. 1-18 (2024), doi: `10.1115/1.4064494 <https://doi.org/10.1115/1.4064494>`_.
 
