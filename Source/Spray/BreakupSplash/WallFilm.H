@@ -52,11 +52,13 @@ calculateFilmSource(
   amrex::GpuArray<amrex::Real, NUM_SPECIES> h_film;
   amrex::GpuArray<amrex::Real, NUM_SPECIES> cp_i;
   amrex::GpuArray<amrex::Real, NUM_SPECIES> rhoD_ri;
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> L_n {};
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> L_n{};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mn_dot = {};
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_film {}; // Liquid mass fractions
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> oldY_film {}; // Previous liquid mass fracs
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vn {};
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM>
+    Y_film{}; // Liquid mass fractions
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM>
+    oldY_film{}; // Previous liquid mass fracs
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vn{};
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     Y_film[spf] = p.rdata(SprayComps::pstateY + spf);
   }
@@ -93,8 +95,7 @@ calculateFilmSource(
   amrex::Real sumXVap = 0.; // Sum of X_v
   calcVaporState<pele::physics::PhysicsType::eos_type>()(
     fdat, gpv, rule, T_film, C_eps, mw_film, Y_film.data(), T_skin, cBoilT,
-    Y_skin.data(), X_vn.data(), L_n.data(), B_M, sumXVap, cp_skin,
-    mw_skin);
+    Y_skin.data(), X_vn.data(), L_n.data(), B_M, sumXVap, cp_skin, mw_skin);
   amrex::Real lambda_skin = 0.;
   amrex::Real mu_skin = 0.;
   amrex::Real xi_skin = 0.;
@@ -131,7 +132,8 @@ calculateFilmSource(
       if (X_vn[spf] > 0.) {
         // Normalize mass diffusivity by fuel vapor molar fraction
         rhoD_ri[fdspec] *= mw_skin / gpv.mw[fdspec] * SprayUnits::rhod_conv;
-        amrex::Real X_vi = fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_vn);
+        amrex::Real X_vi =
+          fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_vn);
         amrex::Real X_norm = X_vi / sumXVap;
         rhoD_ri[fdspec] *= X_norm;
         amrex::Real X_SLi_norm = 1.;
@@ -139,7 +141,8 @@ calculateFilmSource(
           // Multiple species deposit to fdspec, scale rhoD_{r,n} accordingly
           X_SLi_norm = X_vn[spf] / X_vi;
         }
-        mn_dot[spf] = -amrex::max(h_mass * std::pow(X_SLi_norm*rhoD_ri[fdspec], 2. / 3.), 0.);
+        mn_dot[spf] = -amrex::max(
+          h_mass * std::pow(X_SLi_norm * rhoD_ri[fdspec], 2. / 3.), 0.);
         m_dot += mn_dot[spf];
         sumL += mn_dot[spf] * L_n[spf];
       }
@@ -182,8 +185,10 @@ calculateFilmSource(
   gpv.fluid_mass_src = mdot_total;
   for (int pc = 0; pc < fdat.N_pc; ++pc) {
     const int pcspec = fdat.pc_indx[pc];
-    amrex::Real oldY_film_pc = fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, oldY_film);
-    amrex::Real newY = fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, Y_film);
+    amrex::Real oldY_film_pc =
+      fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, oldY_film);
+    amrex::Real newY =
+      fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, Y_film);
     amrex::Real midot = (newY * film_mass - oldY_film_pc * start_mass) / dt;
     gpv.fluid_Y_dot[pcspec] = midot;
     gpv.fluid_eng_src += midot * h_film[pcspec];

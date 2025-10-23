@@ -92,14 +92,16 @@ struct BaseLiqProps
 #ifdef PELE_SPRAY_GCM
     // Must read in molecular weights when SPRAY_FUEL_NUM > NUM_SPECIES
     {
-      amrex::Warning("Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under development");
+      amrex::Warning(
+        "Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under development");
       amrex::ParmParse pp("particles");
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
       getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight");
     }
 #else
-    amrex::Abort("SPRAY_FUEL_NUM > NUM_SPECIES only supported with PELE_SPRAY_GCM");
+    amrex::Abort(
+      "SPRAY_FUEL_NUM > NUM_SPECIES only supported with PELE_SPRAY_GCM");
 #endif // PELE_SPRAY_GCM
 #endif
   }

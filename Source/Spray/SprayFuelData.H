@@ -130,53 +130,60 @@ struct SprayData
     }
   }
 
-  // Compute the dot product of the i-th row of a binary CSR matrix L with vector x.
-  template <typename IntArrayLike, typename IntArrayLike2, typename RealArrayLike>
-  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-  amrex::Real binary_csr_rowdotprod(int i,
-                      const IntArrayLike& row_ptr,
-                      const IntArrayLike2& col_idx,
-                      const RealArrayLike& x) const
+  // Compute the dot product of the i-th row of a binary CSR matrix L with
+  // vector x.
+  template <
+    typename IntArrayLike,
+    typename IntArrayLike2,
+    typename RealArrayLike>
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real binary_csr_rowdotprod(
+    int i,
+    const IntArrayLike& row_ptr,
+    const IntArrayLike2& col_idx,
+    const RealArrayLike& x) const
   {
-      amrex::Real sum = 0.;
-      for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
-          sum += x[col_idx[j]];
-      }
-      return sum;
+    amrex::Real sum = 0.;
+    for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
+      sum += x[col_idx[j]];
+    }
+    return sum;
   }
 
   // Compute the matrix-vector product Lx = y provided a binary CSR matrix L
-  template <typename IntArrayLike, typename IntArrayLike2, typename RealArrayLike, typename RealArrayLike2>
-  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-  void binary_csr_matvecmult(
-      const int num_rows,
-      const IntArrayLike& row_ptr,
-      const IntArrayLike2& col_idx,
-      const RealArrayLike& x,
-      RealArrayLike2& y) const
+  template <
+    typename IntArrayLike,
+    typename IntArrayLike2,
+    typename RealArrayLike,
+    typename RealArrayLike2>
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void binary_csr_matvecmult(
+    const int num_rows,
+    const IntArrayLike& row_ptr,
+    const IntArrayLike2& col_idx,
+    const RealArrayLike& x,
+    RealArrayLike2& y) const
   {
-      for (int i = 0; i < num_rows; ++i) {
-          amrex::Real sum = 0.;
-          for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
-              sum += x[col_idx[j]];
-          }
-          y[i] = sum;
+    for (int i = 0; i < num_rows; ++i) {
+      amrex::Real sum = 0.;
+      for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
+        sum += x[col_idx[j]];
       }
-  } 
+      y[i] = sum;
+    }
+  }
 
   // Return an ordered vector of unique nonzero row indices in a CSR matrix.
   template <typename IntArrayLike>
-  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-  int binary_csr_nonzerorows(const IntArrayLike& row_ptr, int* nonzero_rows)
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
+  binary_csr_nonzerorows(const IntArrayLike& row_ptr, int* nonzero_rows)
   {
-      int num_rows = row_ptr.size() - 1;
-      int nnzrows = 0;
-      for (int i = 0; i < num_rows; ++i) {
-          if (row_ptr[i + 1] > row_ptr[i]) {
-              nonzero_rows[nnzrows++] = i;
-          }
+    int num_rows = row_ptr.size() - 1;
+    int nnzrows = 0;
+    for (int i = 0; i < num_rows; ++i) {
+      if (row_ptr[i + 1] > row_ptr[i]) {
+        nonzero_rows[nnzrows++] = i;
       }
-      return nnzrows;
+    }
+    return nnzrows;
   }
 };
 

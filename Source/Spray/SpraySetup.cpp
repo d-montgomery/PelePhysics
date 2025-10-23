@@ -203,7 +203,7 @@ SprayParticleContainer::spraySetup(
   const pele::physics::eos::EosParm<pele::physics::PhysicsType::eos_type>*
     eosparms_d)
 {
-m_sprayData->dep_indx.fill(-1); 
+  m_sprayData->dep_indx.fill(-1);
 
 #ifndef USE_MANIFOLD_EOS
 #if NUM_SPECIES > 1
@@ -220,7 +220,9 @@ m_sprayData->dep_indx.fill(-1);
       }
     }
     if (m_sprayData->dep_indx[spf] < 0) {
-      Abort("Spray species " + m_sprayFuelNames[spf] + " deposits to " + m_sprayDepNames[spf] + ", which is not found in gas species list");
+      Abort(
+        "Spray species " + m_sprayFuelNames[spf] + " deposits to " +
+        m_sprayDepNames[spf] + ", which is not found in gas species list");
     }
   }
 
@@ -236,20 +238,24 @@ m_sprayData->dep_indx.fill(-1);
   int nnz = 0; // number of non-zeros
   m_sprayData->L_row[0] = 0;
   for (int ns = 0; ns < NUM_SPECIES; ++ns) {
-      for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-          if (ns == m_sprayData->dep_indx[spf]) {
-              m_sprayData->L_col[nnz] = spf;
-              ++nnz;
-          }
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      if (ns == m_sprayData->dep_indx[spf]) {
+        m_sprayData->L_col[nnz] = spf;
+        ++nnz;
       }
-      m_sprayData->L_row[ns + 1] = nnz;
+    }
+    m_sprayData->L_row[ns + 1] = nnz;
   }
 
   // Set of phase change species
   int tmp_pc_indx[NUM_SPECIES];
-  m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
-  m_sprayData->pc_indx = (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
-  amrex::Gpu::copy(amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc, m_sprayData->pc_indx);
+  m_sprayData->N_pc =
+    m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
+  m_sprayData->pc_indx =
+    (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
+  amrex::Gpu::copy(
+    amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
+    m_sprayData->pc_indx);
 
   // DEBUG PRINT STATEMENTS ---------------------------------------------------
   amrex::Print() << "\nGas Species: ";
@@ -274,9 +280,12 @@ m_sprayData->dep_indx.fill(-1);
   }
   amrex::Print() << "\n Spray fuel species mapping to gas phase species: ";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << "\n  Spray fuel species " << spf << ": " << m_sprayFuelNames[spf]
-                 << "\n     mapped to gas species " << m_sprayData->dep_indx[spf] << ": " << spec_names[m_sprayData->dep_indx[spf]] 
-                 << "\n     dep_indx[" << spf << "] = " << m_sprayData->dep_indx[spf];
+    amrex::Print() << "\n  Spray fuel species " << spf << ": "
+                   << m_sprayFuelNames[spf] << "\n     mapped to gas species "
+                   << m_sprayData->dep_indx[spf] << ": "
+                   << spec_names[m_sprayData->dep_indx[spf]]
+                   << "\n     dep_indx[" << spf
+                   << "] = " << m_sprayData->dep_indx[spf];
   }
   amrex::Print() << "\n Mapping matrix L:\n";
   for (int ns = 0; ns < NUM_SPECIES; ++ns) {
@@ -311,7 +320,8 @@ m_sprayData->dep_indx.fill(-1);
   for (int ns = 0; ns < SPRAY_FUEL_NUM; ++ns) {
     const int fdspec = m_sprayData->dep_indx[ns];
     m_sprayData->liqprops.latentRef_minus_gasRefH_i[ns] =
-      m_sprayData->liqprops.latent[ns] - fuelEnth[fdspec] * SprayUnits::eng_conv;
+      m_sprayData->liqprops.latent[ns] -
+      fuelEnth[fdspec] * SprayUnits::eng_conv;
   }
 
 #else // USE_MANIFOLD_EOS is defined
