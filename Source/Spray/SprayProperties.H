@@ -92,11 +92,13 @@ struct BaseLiqProps
       }
     }
 #endif // PELE_SPRAY_GCM
-#else // SPRAY_FUEL_NUM > NUM_SPECIES
+#else  // SPRAY_FUEL_NUM > NUM_SPECIES
     // Must read in molecular weights when SPRAY_FUEL_NUM > NUM_SPECIES
     {
       amrex::Warning(
-        "Warning: Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under development and requires user specified molecular weights for liquid species");
+        "Warning: Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under "
+        "development and requires user specified molecular weights for liquid "
+        "species");
       amrex::ParmParse pp("particles");
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
