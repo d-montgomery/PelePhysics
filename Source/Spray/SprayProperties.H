@@ -65,6 +65,7 @@ struct BaseLiqProps
   init_mw(const RealArrayLike& mw_gas, const int* dep_indx)
   {
 #if SPRAY_FUEL_NUM <= NUM_SPECIES
+    // Use gas-phase molecular weights for the liquid species
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fdspec = dep_indx[spf];
       mw[spf] = mw_gas[fdspec] * SprayUnits::mass_conv;
@@ -88,8 +89,18 @@ struct BaseLiqProps
     }
 #endif // PELE_SPRAY_GCM
 #else
-    amrex::Abort("SPRAY_FUEL_NUM > NUM_SPECIES");
-    // Will require mw to be read from input file in many-to-one case
+#ifdef PELE_SPRAY_GCM
+    // Must read in molecular weights when SPRAY_FUEL_NUM > NUM_SPECIES
+    {
+      amrex::Warning("Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under development");
+      amrex::ParmParse pp("particles");
+      std::vector<std::string> fuel_names;
+      pp.getarr("fuel_species", fuel_names);
+      getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight");
+    }
+#else
+    amrex::Abort("SPRAY_FUEL_NUM > NUM_SPECIES only supported with PELE_SPRAY_GCM");
+#endif // PELE_SPRAY_GCM
 #endif
   }
 
