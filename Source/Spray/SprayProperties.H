@@ -102,7 +102,7 @@ struct BaseLiqProps
       amrex::ParmParse pp("particles");
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
-      getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight", true);
+      getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight");
     }
 #endif
   }

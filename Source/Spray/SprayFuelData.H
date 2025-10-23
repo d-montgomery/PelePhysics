@@ -93,7 +93,6 @@ struct SprayData
   amrex::Real dtmod = 0.5;
   amrex::RealVect body_force = amrex::RealVect::TheZeroVector();
   amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_indx{};
-  amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, NUM_SPECIES> mtrx_Li{};
   amrex::GpuArray<int, NUM_SPECIES + 1> L_row{};
   amrex::GpuArray<int, SPRAY_FUEL_NUM> L_col{};
   int N_pc = 0;
@@ -147,28 +146,6 @@ struct SprayData
       sum += x[col_idx[j]];
     }
     return sum;
-  }
-
-  // Compute the matrix-vector product Lx = y provided a binary CSR matrix L
-  template <
-    typename IntArrayLike,
-    typename IntArrayLike2,
-    typename RealArrayLike,
-    typename RealArrayLike2>
-  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void binary_csr_matvecmult(
-    const int num_rows,
-    const IntArrayLike& row_ptr,
-    const IntArrayLike2& col_idx,
-    const RealArrayLike& x,
-    RealArrayLike2& y) const
-  {
-    for (int i = 0; i < num_rows; ++i) {
-      amrex::Real sum = 0.;
-      for (int j = row_ptr[i]; j < row_ptr[i + 1]; ++j) {
-        sum += x[col_idx[j]];
-      }
-      y[i] = sum;
-    }
   }
 
   // Return an ordered vector of unique nonzero row indices in a CSR matrix.
