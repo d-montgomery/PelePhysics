@@ -47,6 +47,10 @@ getInpVal(
 {
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     const std::string var_read = fuel_names[spf] + "_" + varname;
+    if (!ppp.contains(var_read.c_str())) {
+      amrex::Abort(
+        "particles." + var_read + " must be specified in the input file.");
+    }
     ppp.get(var_read.c_str(), val[spf]);
   }
 }
@@ -76,7 +80,7 @@ struct BaseLiqProps
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
       amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mw_fl;
-      getInpVal(mw_fl.data(), pp, fuel_names.data(), "molar_weight");
+      getInpVal(mw_fl.data(), pp, fuel_names.data(), "molar_weight", true);
       for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
         const amrex::Real diff = std::abs(mw_fl[spf] - mw[spf]);
         if (diff > 1.E-3) {
@@ -88,21 +92,16 @@ struct BaseLiqProps
       }
     }
 #endif // PELE_SPRAY_GCM
-#else
-#ifdef PELE_SPRAY_GCM
+#else // SPRAY_FUEL_NUM > NUM_SPECIES
     // Must read in molecular weights when SPRAY_FUEL_NUM > NUM_SPECIES
     {
       amrex::Warning(
-        "Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under development");
+        "Warning: Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under development and requires user specified molecular weights for liquid species");
       amrex::ParmParse pp("particles");
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
-      getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight");
+      getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight", true);
     }
-#else
-    amrex::Abort(
-      "SPRAY_FUEL_NUM > NUM_SPECIES only supported with PELE_SPRAY_GCM");
-#endif // PELE_SPRAY_GCM
 #endif
   }
 
