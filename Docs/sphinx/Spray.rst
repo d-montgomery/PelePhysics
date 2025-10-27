@@ -301,7 +301,7 @@ Spray Equations with Manifold Models
 
 The Spray implementation for Manifold-based combustion models (i.e., in the gas phase reduced-dimensional manifold parameters are transported rather than species) is meant to follow that of the implementation and assumptions described above for simulations using finite rate gas phase chemistry mechanisms. However, a major additional assumption introduced for the first pass at this implementation is to substantially neglect evolution of the energy equation. Instead, it is assumed that the enthalpy deficit in the gas phase due to enthalpy of vaporization is accounted for in the boundary conditions used to generate the reduced-order manifold that defines gas phase properties. For the manifold model implementation, the liquid phase remains represented by the same set of liquid species as in the finite rate chemistry implementation, and the liquid phase equations of motion, mass, momentum, and energy remain unchanged from those listed above. However, because the gas phase now involved transport of manifold parameters rather than species, the implementation must be adjusted to properly estimate the gas phase composition near the droplets for the purpose of computing phase quilibria and phase change rates. The source terms must also be appropriately transformed from species source terms to manifold parameter source terms for coupling to the gas phase.
 
-The manifold parameters are denoted as :math:`\xi_j` and are defined as linear combinations of species  :math:`\xi_j = W_{ij} Y_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_j)` where :math:`\phi = (\bar{M}, Y_k, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase species may contribute to a single species that can be extracted from the manifold.
+The manifold parameters are denoted as :math:`\xi_k` and are defined as linear combinations of species  :math:`\xi_k = W_{ki} Y_i`. Gas phase properties may be obtained as functions of the Manifold, :math:`\phi = \mathcal{F}(\xi_k)` where :math:`\phi = (\bar{M}, Y_i, T, ...)`. Similarly to detailed chemistry, we allow that multiple liquid phase species may contribute to a single species that can be extracted from the manifold.
 
 The modified procedure for Manifold-based gas phase chemistry is as follows for updating the spray droplet:
 
@@ -364,24 +364,24 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
                             = \frac{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y^{pc}_{r,k}}{1 - \sum_{k \in \mathcal{S}_{pc} | Y_{v,k} > 0 } Y^{pc}_{g,k}}
 
 
-   Therefore, in order to compute :math:`\xi_{r,j} = W_{ij} Y_{r,i}` from the available data :math:`(\xi_{g,j}, Y^{pc}_{g,i}(\xi_{g,j}), \text{and } Y^{pc}_{v,i} )`, we note
+   Therefore, in order to compute :math:`\xi_{r,k} = W_{ki} Y_{r,i}` from the available data :math:`(\xi_{g,k}, Y^{pc}_{g,i}(\xi_{g,k}), \text{and } Y^{pc}_{v,i} )`, we note
 
    .. math::
-      \xi_{r,j} &= W_{ij} (Y^{pc}_{r,i} + Y^{nc}_{r,i}) = W_{ij} Y^{pc}_{r,i} + W_{ij} \theta Y^{nc}_{g,i}, \text{and} \\
-      \xi_{g,j} &= W_{ij} (Y^{pc}_{g,i} + Y^{nc}_{g,i}) \therefore W_{ij} Y^{nc}_{g,i} = \xi_{g,j} - W_{ij} Y^{pc}_{g,i}.
+      \xi_{r,k} &= W_{ki} (Y^{pc}_{r,i} + Y^{nc}_{r,i}) = W_{ki} Y^{pc}_{r,i} + W_{ki} \theta Y^{nc}_{g,i}, \text{and} \\
+      \xi_{g,k} &= W_{ki} (Y^{pc}_{g,i} + Y^{nc}_{g,i}) \therefore W_{ki} Y^{nc}_{g,i} = \xi_{g,j} - W_{ki} Y^{pc}_{g,i}.
 
-   We can therefore compute :math:`\xi_{r,j}` from only available data using:
+   We can therefore compute :math:`\xi_{r,k}` from only available data using:
 
    .. math::
-      \xi_{r,j} =  W_{ij} Y^{pc}_{r,i} + \theta (\xi_{g,j} - W_{ij} Y^{pc}_{g,i} ).
+      \xi_{r,k} =  W_{ki} Y^{pc}_{r,i} + \theta (\xi_{g,k} - W_{ki} Y^{pc}_{g,i} ).
 
-   The present implementation specializes to the case (common in combustion modeling) where the manifold parameters :math:`\xi_j` are either progress variable like :math:`(W_{ij}=0 \; \forall\; i \in \mathcal{S}_{pc})`
-   or mixture fraction like (:math:`W_{ij}=1` for one :math:`i \in \mathcal{S}_{pc}` and :math:`0` for all others).
+   The present implementation specializes to the case (common in combustion modeling) where the manifold parameters :math:`\xi_k` are either progress variable like :math:`(W_{ki}=0 \; \forall\; i \in \mathcal{S}_{pc})`
+   or mixture fraction like (:math:`W_{ki}=1` for one :math:`i \in \mathcal{S}_{pc}` and :math:`0` for all others).
 
-#. Proceeds as in the ideal gas implementation, but :math:`\bar{M}_r` and :math:`\rho_r` are computed as functions of the manifold :math:`\phi(\xi_j))`.
+#. Proceeds as in the ideal gas implementation, but :math:`\bar{M}_r` and :math:`\rho_r` are computed as functions of the manifold :math:`\phi(\xi_k))`.
    :math:`c_{p,r}` is not computed because the energy equation is not solved.
 
-#. Again, :math:`\mu_r`, :math:`\lambda_r`, and :math:`\rho D_{r,n}`  are computed as functions of the manifold :math:`\phi(\xi_j))`.
+#. Again, :math:`\mu_r`, :math:`\lambda_r`, and :math:`\rho D_{r,n}`  are computed as functions of the manifold :math:`\phi(\xi_k))`.
 
 #. Diffusion coefficient modification proceeds as in the detailed chemistry case.
 
@@ -392,7 +392,7 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
 #. Gas phase source terms follow the detailed chemistry implementation, except that the energy/enthalpy equations are ignored and
 
    .. math::
-      S_{\rho \xi_j} = W_{ij} S_{\rho Y_i} = W_{ij} \mathcal{C} \sum_{n \in \mathcal{S}_L} \mathbf{L}_{i,n}\dot{m}_n \quad \forall\; i \in \mathcal{S}_{g},
+      S_{\rho \xi_k} = W_{ki} S_{\rho Y_i} = W_{ki} \mathcal{C} \sum_{n \in \mathcal{S}_{L,i}} \dot{m}_n \quad \forall\; i \in \mathcal{S}_{pc},
 
 
 
