@@ -257,26 +257,6 @@ SprayParticleContainer::spraySetup(
     m_sprayData->pc_indx);
 
   // DEBUG PRINT STATEMENTS ---------------------------------------------------
-  // amrex::Print() << "\nGas Species: ";
-  // for (int ns = 0; ns < NUM_SPECIES; ++ns) {
-  //  amrex::Print() << spec_names[ns] << " ";
-  //}
-  // amrex::Print() << "\nSpray Species: ";
-  // for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-  //  amrex::Print() << m_sprayFuelNames[spf] << " ";
-  //}
-  // amrex::Print() << "\nDependent Species: ";
-  // for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-  //  amrex::Print() << m_sprayDepNames[spf] << " ";
-  //}
-  // amrex::Print() << "\ndep_indx = ";
-  // for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-  //  amrex::Print() << m_sprayData->dep_indx[spf] << " ";
-  //}
-  // amrex::Print() << "\npc_indx = ";
-  // for (int spf = 0; spf < m_sprayData->N_pc; ++spf) {
-  //  amrex::Print() << m_sprayData->pc_indx[spf] << " ";
-  //}
   amrex::Print() << "\n Spray fuel species mapping to gas phase species: ";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     amrex::Print() << "\n  Spray fuel species " << spf << ": "

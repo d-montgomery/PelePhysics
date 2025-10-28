@@ -71,19 +71,12 @@ struct calcVaporState
   {
     auto eos = pele::physics::PhysicsType::eos(fdat.eosparm);
     amrex::Real h_gas[NUM_SPECIES];
-    amrex::Real mw_gas[NUM_SPECIES];
     eos.T2Hi(T_in, h_gas);
-    eos.molecular_weight(mw_gas);
 
-    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_dn{};
-    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
-      X_dn[spf] = Y_dn[spf] * mw_part / mw_ln;
-    }
-
-    // Estimate X_{v,n} = X_vn from the liquid state
+    // Estimate X_{v,n} from the liquid state
     amrex::Print() << "Vapor Mole Fractions (spray-species):\n";
     amrex::Real mbar_vap = 0.; // Average molar mass of evaporated fuel in vapor
+    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_dn{}; // Mole frac of the droplet
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fdspec = fdat.dep_indx[spf];
       const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
@@ -95,8 +88,10 @@ struct calcVaporState
       L_n[spf] = part_latent;
       amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
 
-      amrex::Real X_gi = gpv.Y_fluid[fdspec] * gpv.mw_mix /
-                         (mw_gas[fdspec] * SprayUnits::mass_conv);
+      // Mole fraction in gas phase
+      amrex::Real X_gi = gpv.Y_fluid[fdspec] * gpv.mw_mix / gpv.mw[fdspec];
+
+      // Estimate X_gn by distributing X_gi across all the liquid species
       amrex::Real sumXdn_SLi =
         fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_dn);
       amrex::Real X_gn = X_dn[spf] * X_gi;
@@ -104,19 +99,18 @@ struct calcVaporState
         // Multiple species deposit to fdspec, scale accordingly
         X_gn /= sumXdn_SLi;
       }
+
       if (pres_sat > X_gn * gpv.p_fluid) {
-        amrex::Real Xv = X_dn[spf] * pres_sat / gpv.p_fluid;
-        mbar_vap += Xv * mw_ln;
-        sumXVap += Xv;
-        X_vn[spf] = Xv;
+        X_vn[spf] = X_dn[spf] * pres_sat / gpv.p_fluid;
+        mbar_vap += X_vn[spf] * mw_ln;
+        sumXVap += X_vn[spf];
       } else {
         X_vn[spf] = 0.;
       }
       amrex::Print() << "   X_vn[" << spf << "] = " << X_vn[spf] << "\n";
     }
 
-    // Collapse vapor state X_{v,n} on to dependent gas species X_{v,i} =
-    // X_vn_gas
+    // Collapse vapor state X_{v,n} on to dependent gas species X_{v,i} 
     amrex::Print() << "Vapor Mole Fractions (gas-species):\n";
     amrex::GpuArray<amrex::Real, NUM_SPECIES> X_vi{};
     for (int pc = 0; pc < fdat.N_pc; ++pc) {
@@ -138,8 +132,7 @@ struct calcVaporState
     for (int pc = 0; pc < fdat.N_pc; ++pc) {
       const int pcspec = fdat.pc_indx[pc];
       if (X_vi[pcspec] > 0.) {
-        const amrex::Real mw_i = mw_gas[pcspec] * SprayUnits::mass_conv;
-        Y_vi[pcspec] = X_vi[pcspec] * mw_i / totalmwx;
+        Y_vi[pcspec] = X_vi[pcspec] * gpv.mw[pcspec] / totalmwx;
         amrex::Print() << "   Y_vi[" << pcspec << "] = " << Y_vi[pcspec]
                        << "\n";
         sumYVap += Y_vi[pcspec];
