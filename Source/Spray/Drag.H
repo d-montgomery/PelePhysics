@@ -73,27 +73,33 @@ struct calcVaporState
     amrex::Real h_gas[NUM_SPECIES];
     eos.T2Hi(T_in, h_gas);
 
+    // Mole fraction of the droplet, need vector for many-to-one mapping later
+    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_dn{};
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
+      X_dn[spf] = Y_dn[spf] * mw_part / mw_ln;
+    }
+
     // Estimate X_{v,n} from the liquid state
     amrex::Print() << "Vapor Mole Fractions (spray-species):\n";
     amrex::Real mbar_vap = 0.; // Average molar mass of evaporated fuel in vapor
-    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM>
-      X_dn{}; // Mole frac of the droplet
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fdspec = fdat.dep_indx[spf];
-      const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
-      amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
 
       // Compute latent heat
-      amrex::Real part_latent = fdat.liqprops.latent_i(
+      const amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
+      const amrex::Real part_latent = fdat.liqprops.latent_i(
         T_part, h_gas[fdspec] * SprayUnits::eng_conv, spf);
       L_n[spf] = part_latent;
-      amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
+      const amrex::Real pres_sat =
+        fdat.liqprops.psat_i(T_part, spf, part_latent);
 
       // Mole fraction in gas phase
-      amrex::Real X_gi = gpv.Y_fluid[fdspec] * gpv.mw_mix / gpv.mw[fdspec];
+      const amrex::Real X_gi =
+        gpv.Y_fluid[fdspec] * gpv.mw_mix / gpv.mw[fdspec];
 
       // Estimate X_gn by distributing X_gi across all the liquid species
-      amrex::Real sumXdn_SLi =
+      const amrex::Real sumXdn_SLi =
         fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_dn);
       amrex::Real X_gn = X_dn[spf] * X_gi;
       if (sumXdn_SLi > X_dn[spf]) {
@@ -102,6 +108,7 @@ struct calcVaporState
       }
 
       if (pres_sat > X_gn * gpv.p_fluid) {
+        const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
         X_vn[spf] = X_dn[spf] * pres_sat / gpv.p_fluid;
         mbar_vap += X_vn[spf] * mw_ln;
         sumXVap += X_vn[spf];
@@ -123,12 +130,11 @@ struct calcVaporState
 
     // Mass fractions in vapor state
     amrex::Print() << "Vapor Mass Fractions (gas-species):\n";
-    amrex::Real totalmwx = mbar_vap + (1. - sumXVap) * gpv.mw_mix;
+    const amrex::Real totalmwx = mbar_vap + (1. - sumXVap) * gpv.mw_mix;
     amrex::Print() << "   totalmwx = " << totalmwx << "\n";
-    amrex::Real sumYSkin =
-      0.; // Mass fraction of fuel in the modeled skin phase
-    amrex::Real sumYfFluid = 0.; // Mass fraction of fuel in the gas phase
-    amrex::Real sumYVap = 0.;    // Mass fraction of fuel in the vapor phase
+    amrex::Real sumYSkin = 0.;   // Sum of mass frac of fuel in the skin phase
+    amrex::Real sumYfFluid = 0.; // Sum of mass frac of fuel in the gas phase
+    amrex::Real sumYVap = 0.;    // Sum of mass frac of fuel in the vapor phase
     amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_vi{};
     for (int pc = 0; pc < fdat.N_pc; ++pc) {
       const int pcspec = fdat.pc_indx[pc];
@@ -144,9 +150,9 @@ struct calcVaporState
     for (int pc = 0; pc < fdat.N_pc; ++pc) {
       const int pcspec = fdat.pc_indx[pc];
       if (X_vi[pcspec] > 0.) {
-        amrex::Real Y_gi = gpv.Y_fluid[pcspec];
+        const amrex::Real Y_gi = gpv.Y_fluid[pcspec];
         sumYfFluid += Y_gi;
-        amrex::Real Y_ri = Y_vi[pcspec] + rule * (Y_gi - Y_vi[pcspec]);
+        const amrex::Real Y_ri = Y_vi[pcspec] + rule * (Y_gi - Y_vi[pcspec]);
         Y_skin[pcspec] = Y_ri;
         sumYSkin += Y_ri;
         amrex::Print() << "   Y_gi[" << pcspec << "] = " << Y_gi << "\n";
