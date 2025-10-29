@@ -378,10 +378,24 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
    The present implementation specializes to the case (common in combustion modeling) where the manifold parameters :math:`\xi_k` are either progress variable like :math:`(W_{ki}=0 \; \forall\; i \in \mathcal{S}_{pc})`
    or mixture fraction like (:math:`W_{ki}=1` for one :math:`i \in \mathcal{S}_{pc}` and :math:`0` for all others).
 
-#. Proceeds as in the ideal gas implementation, but :math:`\bar{M}_r` and :math:`\rho_r` are computed as functions of the manifold :math:`\phi(\xi_k))`.
-   :math:`c_{p,r}` is not computed because the energy equation is not solved.
+#. Proceeds as in the ideal gas implementation, but :math:`\bar{M}_r` and :math:`\rho_r` are computed as functions of the manifold :math:`\phi(\xi_k))`. However, we note that the computed reference temperature
+   :math:`T_r^* = \phi(\xi_{k,r})` may deviate significantly from the nominal reference tempertaure :math:`T_r = T_d + A (T_g - T_d)`. To correct for this, the density obtained from the table is rescaled
+   using an ideal gas law assumption:
 
-#. Again, :math:`\mu_r`, :math:`\lambda_r`, and :math:`\rho D_{r,n}`  are computed as functions of the manifold :math:`\phi(\xi_k))`.
+   .. math::
+
+      \rho_r = \rho_r^* \frac{T_r^*}{T_r}
+
+   where :math:`\rho_r^*` is the value obtained from the manifold model. Heat capacities :math:`c_{P,r}` and :math:`c^f_{P,r}` are obtained from the manifold model without correction due to the relatively week dependence on temperature for heat capacity.
+
+#. Again, :math:`\mu_r`, :math:`\lambda_r`, and :math:`\rho D_{r,n}`  are computed as functions of the manifold. Due to the temperature discrepancy noted in the previous step, a rescaling based on Sutherland's law is performed for all the transport coefficients, shown here for :math:`\mu_r`:
+
+   .. math::
+
+      \mu_r = \mu_r^* \left(\frac{T_r}{T_r^*}\right)^{3/2} \frac{T_r^* + S}{T_r + S}
+
+   where :math:`{}^*` indicates a quantity obtained from the manifold model :math:`\phi(\xi_k)`.
+
 
 #. Diffusion coefficient modification proceeds as in the detailed chemistry case.
 
@@ -771,7 +785,7 @@ The following table details the parameters of each test:
    :align: center
    :figwidth: 85%
 
-   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ This demonstrates three different approaches: (i) A detailed non-reacting mechanism with 67 species in the liquid and gas phases, (ii) a single liquid species and corresponding single Hychem gas species, where the thermophysical properties of the liquid species are estimated using FuelLib's mixture properties, and (iii) a many-to-one mapping where 67 liquid species evaporate to a single Hychem gas species. The many-to-one cases for PeleGCM and PeleMP with Antoine fit are indistinguishable on this plot. 
+   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ This demonstrates three different approaches: (i) A detailed non-reacting mechanism with 67 species in the liquid and gas phases, (ii) a single liquid species and corresponding single Hychem gas species, where the thermophysical properties of the liquid species are estimated using FuelLib's mixture properties, and (iii) a many-to-one mapping where 67 liquid species evaporate to a single Hychem gas species. The many-to-one cases for PeleGCM and PeleMP with Antoine fit are indistinguishable on this plot.
 
 .. [#owen] "PeleMP: The Multiphysics Solver for the Combustion Pele Adaptive Mesh Refinement Code Suite," L. D. Owen, W. Ge, M. Rieth, M. Arienti, L. Esclapez, B. S. Soriano, M. E. Mueller, M. Day, R. Sankaran, and J. H. Chen, J. Fluids Eng., vol. 146, no. 4, pp. 1-18 (2024), doi: `10.1115/1.4064494 <https://doi.org/10.1115/1.4064494>`_.
 
