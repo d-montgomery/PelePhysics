@@ -379,7 +379,7 @@ The modified procedure for Manifold-based gas phase chemistry is as follows for 
    or mixture fraction like (:math:`W_{ki}=1` for one :math:`i \in \mathcal{S}_{pc}` and :math:`0` for all others).
 
 #. Proceeds as in the ideal gas implementation, but :math:`\bar{M}_r` and :math:`\rho_r` are computed as functions of the manifold :math:`\phi(\xi_k))`. However, we note that the computed reference temperature
-   :math:`T_r^* = \phi(\xi_{k,r})` may deviate significantly from the nominal reference tempertaure :math:`T_r = T_d + A (T_g - T_d)`. To correct for this, the density obtained from the table is rescaled
+   :math:`T_r^* = \phi(\xi_{k,r})` may deviate significantly from the nominal reference temperature :math:`T_r = T_d + A (T_g - T_d)`. To correct for this, the density obtained from the table is rescaled
    using an ideal gas law assumption:
 
    .. math::
