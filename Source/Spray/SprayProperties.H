@@ -47,11 +47,11 @@ getInpVal(
 {
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     const std::string var_read = fuel_names[spf] + "_" + varname;
-    if (!ppp.contains(var_read.c_str())) {
+    if (!ppp.contains(var_read)) {
       amrex::Abort(
         "particles." + var_read + " must be specified in the input file.");
     }
-    ppp.get(var_read.c_str(), val[spf]);
+    ppp.get(var_read, val[spf]);
   }
 }
 
