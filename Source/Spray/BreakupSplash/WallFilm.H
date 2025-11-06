@@ -54,7 +54,7 @@ calculateFilmSource(
   amrex::GpuArray<amrex::Real, NUM_SPECIES> rhoD_ri;
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> L_n{};
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mn_dot = {};
-  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_film{}; // Liquid mass fracs
+  amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_film{};    // Liquid mass fracs
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> oldY_film{}; // Prev. mass fracs
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vn{};
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
@@ -112,12 +112,12 @@ calculateFilmSource(
     // Convert mass diffusion coefficient from mixture average to binary for
     // fuel only, not concerned with other species
     for (int pc = 0; pc < fdat.N_pc; ++pc) {
-          const int pcspec = fdat.pc_indx[pc];
-          rhoD_ri[pcspec] *= mw_skin / gpv.mw[pcspec] * SprayUnits::rhod_conv;
-          amrex::Real X_vi = fdat.binary_csr_rowdotprod(
-            pcspec, fdat.L_row, fdat.L_col, X_vn.data());
-          amrex::Real X_norm = X_vi / sumXVap;
-          rhoD_ri[pcspec] *= X_norm;
+      const int pcspec = fdat.pc_indx[pc];
+      rhoD_ri[pcspec] *= mw_skin / gpv.mw[pcspec] * SprayUnits::rhod_conv;
+      amrex::Real X_vi =
+        fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, X_vn.data());
+      amrex::Real X_norm = X_vi / sumXVap;
+      rhoD_ri[pcspec] *= X_norm;
     }
     // Estimate convective heat transfer using O'Rourke and Amsden 1996 assuming
     // y+ < y+c
@@ -140,14 +140,14 @@ calculateFilmSource(
       const int fdspec = fdat.dep_indx[spf];
       if (X_vn[spf] > 0.) {
         amrex::Real X_vi =
-              fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_vn);
+          fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_vn);
         amrex::Real Xnorm = 1.;
         if (X_vi > X_vn[spf]) {
           // Multiple species deposit to fdspec, scale rhoD_{r,n} accordingly
           Xnorm = X_vn[spf] / X_vi;
         }
-        mn_dot[spf] = -amrex::max(
-          h_mass * std::pow(Xnorm * rhoD_ri[fdspec], 2. / 3.), 0.);
+        mn_dot[spf] =
+          -amrex::max(h_mass * std::pow(Xnorm * rhoD_ri[fdspec], 2. / 3.), 0.);
         m_dot += mn_dot[spf];
         sumL += mn_dot[spf] * L_n[spf];
       }
@@ -161,7 +161,7 @@ calculateFilmSource(
     // remains constant; this is not physically correct
     film_height = new_mass / (rho_film * film_area);
     if (film_height > min_height) {
-#if SPRAY_FUEL_NUM > 1
+      if (SPRAY_FUEL_NUM > 1) {
         amrex::Real sumY = 0.;
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           Y_film[spf] = amrex::min(
@@ -176,9 +176,7 @@ calculateFilmSource(
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           Y_film[spf] /= sumY;
         }
-
-#endif        
-      } 
+      }
     } else {
       film_height = 0.;
       new_mass = 0.;
