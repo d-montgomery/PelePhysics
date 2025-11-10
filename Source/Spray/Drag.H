@@ -658,7 +658,7 @@ calculateSpraySource(
     amrex::Real midot =
       (newY * pmass - oldY_part_pc * startmass) / (fdat.dtmod * flow_dt);
     gpv.fluid_Y_dot[pcspec] = num_ppp * midot;
-    amrex::Print() << "   gpv.fluid_Ydot[" << pc
+    amrex::Print() << "   gpv.fluid_Ydot[" << pcspec
                    << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
     amrex::Print() << "      newY = " << newY << "\n      pmass = " << pmass
                    << "\n      oldY_part = " << oldY_part_pc
