@@ -94,6 +94,7 @@ struct SprayData
   amrex::RealVect body_force = amrex::RealVect::TheZeroVector();
   amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_indx{};
   amrex::GpuArray<int, NUM_SPECIES + 1> L_row{};
+  amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, NUM_SPECIES> mtrx_Li{};
   amrex::GpuArray<int, SPRAY_FUEL_NUM> L_col{};
   int N_pc = 0;
   int* pc_indx = nullptr;

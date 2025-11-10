@@ -216,6 +216,7 @@ SprayParticleContainer::spraySetup(
       std::string gas_spec = spec_names[ns];
       if (gas_spec == m_sprayDepNames[spf]) {
         m_sprayData->dep_indx[spf] = ns;
+        m_sprayData->mtrx_Li[ns][spf] = 1; // TODO: Remvove this after testing
       }
     }
     if (m_sprayData->dep_indx[spf] < 0) {
@@ -267,6 +268,14 @@ SprayParticleContainer::spraySetup(
                    << "] = " << m_sprayData->dep_indx[spf];
   }
   amrex::Print() << "\n Mapping matrix L:\n";
+  for (int ns = 0; ns < NUM_SPECIES; ++ns) {
+    std::string gas_spec = spec_names[ns];
+    amrex::Print() << "   " << ns << ": ";
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      amrex::Print() << m_sprayData->mtrx_Li[ns][spf] << " ";
+    }
+    amrex::Print() << "\n";
+  }
   amrex::Print() << "L_row = ";
   for (int spf = 0; spf < NUM_SPECIES + 1; ++spf) {
     amrex::Print() << m_sprayData->L_row[spf] << " ";
@@ -276,6 +285,13 @@ SprayParticleContainer::spraySetup(
     amrex::Print() << m_sprayData->L_col[spf] << " ";
   }
   amrex::Print() << "\n";
+
+  amrex::Print() << "\n Phase change gas species indices: \n";
+  for (int i = 0; i < m_sprayData->N_pc; ++i) {
+    int pcspec = m_sprayData->pc_indx[i];
+    amrex::Print() << " pc_indx[" << i << "] = " << pcspec << ": "
+                   << spec_names[pcspec] << "\n";
+  }
 
   // END DEBUG PRINT STATEMENTS ------------------------------------------------
 #else
