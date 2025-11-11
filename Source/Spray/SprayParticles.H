@@ -315,9 +315,9 @@ public:
         }
         act_array(i, j, k, SPI.rhoIndx) += tmp_array(i, j, k, SPI.rhoSrcIndx);
         act_array(i, j, k, SPI.engIndx) += tmp_array(i, j, k, SPI.engSrcIndx);
-        for (int sp = 0; sp < SPRAY_FUEL_NUM; ++sp) {
-          const int ecomp = SPI.specIndx + fdat->dep_indx[sp];
-          act_array(i, j, k, ecomp) += tmp_array(i, j, k, SPI.specSrcIndx + sp);
+        for (int pc = 0; pc < fdat->N_pc; ++pc) {
+          const int ecomp = SPI.specIndx + fdat->pc_indx[pc];
+          act_array(i, j, k, ecomp) += tmp_array(i, j, k, SPI.specSrcIndx + pc);
         }
       });
   }
@@ -356,7 +356,7 @@ public:
   static SprayData* getSprayData() { return m_sprayData; }
 
   /// \brief Return fuel species index
-  static int getFuelIndx(const int spf) { return m_sprayData->dep_indx[spf]; }
+  static int getFuelIndx(const int pc) { return m_sprayData->pc_indx[pc]; }
 
   /// \brief Return spray indices
   static SprayComps getSprayComps() { return m_sprayIndx; }
