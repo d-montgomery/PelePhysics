@@ -1,0 +1,2485 @@
+#ifndef MECHANISM_H
+#define MECHANISM_H
+
+#include <AMReX_Gpu.H>
+#include <AMReX_REAL.H>
+
+/* Elements
+0  O
+1  H
+2  C
+3  N
+4  Ar
+5  He
+*/
+
+// Species
+#define NC7H16_ID 0
+#define NC7H16_1_ID 1
+#define NC10H22_ID 2
+#define NC10H22_1_ID 3
+#define O2_ID 4
+#define N2_ID 5
+
+#define NUM_GAS_ELEMENTS 6  // Elements in the homogeneous phase
+#define NUM_GAS_SPECIES 6   // Species in the homogeneous phase
+#define NUM_GAS_REACTIONS 0 // Reactions in the homogeneous phase
+
+#define SITE_DENSITY 0.000000E+00 // mol/cm^2
+
+#define NUM_SURFACE_ELEMENTS 0  // Additional elements in heterogeneous phase
+#define NUM_SURFACE_SPECIES 0   // Species in the heterogeneous phase
+#define NUM_SURFACE_REACTIONS 0 // Reactions in the heterogeneous phase
+
+#define NUM_ELEMENTS (NUM_GAS_ELEMENTS + NUM_SURFACE_ELEMENTS)
+#define NUM_SPECIES (NUM_GAS_SPECIES + NUM_SURFACE_SPECIES)
+#define NUM_REACTIONS (NUM_GAS_REACTIONS + NUM_SURFACE_REACTIONS)
+
+#define NUM_IONS 0
+
+#define NUM_FIT 4
+
+//  ALWAYS on CPU stuff -- can have different def depending on if we are CPU or
+//  GPU based. Defined in mechanism.cpp
+void atomicWeight(amrex::Real* awt);
+//  MISC
+void CKAWT(amrex::Real* awt);
+void CKNCF(int* ncf);
+void CKSYME_STR(amrex::Vector<std::string>& ename);
+void CKSYMS_STR(amrex::Vector<std::string>& kname);
+void GET_RMAP(int* _rmap);
+void CKINU(const int i, int& nspec, int* ki, int* nu);
+void CKKFKR(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real* x,
+  amrex::Real* q_f,
+  amrex::Real* q_r);
+void progressRateFR(
+  amrex::Real* q_f, amrex::Real* q_r, amrex::Real* sc, amrex::Real T);
+//  SPARSE INFORMATION
+void SPARSITY_INFO(int* nJdata, const int* consP, int NCELLS);
+void SPARSITY_INFO_SYST(int* nJdata, const int* consP, int NCELLS);
+void SPARSITY_INFO_SYST_SIMPLIFIED(int* nJdata, const int* consP);
+void
+SPARSITY_PREPROC_CSC(int* rowVals, int* colPtrs, const int* consP, int NCELLS);
+void SPARSITY_PREPROC_CSR(
+  int* colVals, int* rowPtrs, const int* consP, int NCELLS, int base);
+void SPARSITY_PREPROC_SYST_CSR(
+  int* colVals, int* rowPtrs, const int* consP, int NCELLS, int base);
+void SPARSITY_PREPROC_SYST_SIMPLIFIED_CSC(
+  int* rowVals, int* colPtrs, int* indx, const int* consP);
+void SPARSITY_PREPROC_SYST_SIMPLIFIED_CSR(
+  int* colVals, int* rowPtr, const int* consP, int base);
+
+// A few mechanism parameters
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKINDX(int& mm, int& kk, int& ii, int& nfit)
+{
+  mm = 6;
+  kk = 6;
+  ii = 0;
+  nfit = -1; // Why do you need this anyway ?
+}
+
+//  inverse molecular weights
+#ifdef AMREX_USE_GPU
+AMREX_GPU_CONSTANT const amrex::Real global_imw[6] = {
+  9.9795419390249981e-03, // NC7H16
+  9.9795419390249981e-03, // NC7H16_1
+  7.0280983371519331e-03, // NC10H22
+  7.0280983371519331e-03, // NC10H22_1
+  3.1251953247077940e-02, // O2
+  3.5696437495537948e-02, // N2
+};
+#endif
+const amrex::Real h_global_imw[6] = {
+  9.9795419390249981e-03, // NC7H16
+  9.9795419390249981e-03, // NC7H16_1
+  7.0280983371519331e-03, // NC10H22
+  7.0280983371519331e-03, // NC10H22_1
+  3.1251953247077940e-02, // O2
+  3.5696437495537948e-02, // N2
+};
+
+//  molecular weights
+#ifdef AMREX_USE_GPU
+AMREX_GPU_CONSTANT const amrex::Real global_mw[6] = {
+  1.0020500000000000e+02, // NC7H16
+  1.0020500000000000e+02, // NC7H16_1
+  1.4228600000000000e+02, // NC10H22
+  1.4228600000000000e+02, // NC10H22_1
+  3.1998000000000001e+01, // O2
+  2.8013999999999999e+01, // N2
+};
+#endif
+const amrex::Real h_global_mw[6] = {
+  1.0020500000000000e+02, // NC7H16
+  1.0020500000000000e+02, // NC7H16_1
+  1.4228600000000000e+02, // NC10H22
+  1.4228600000000000e+02, // NC10H22_1
+  3.1998000000000001e+01, // O2
+  2.8013999999999999e+01, // N2
+};
+
+//  inverse molecular weights
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+get_imw(amrex::Real* imw_new)
+{
+  imw_new[0] = 9.9795419390249981e-03; // NC7H16
+  imw_new[1] = 9.9795419390249981e-03; // NC7H16_1
+  imw_new[2] = 7.0280983371519331e-03; // NC10H22
+  imw_new[3] = 7.0280983371519331e-03; // NC10H22_1
+  imw_new[4] = 3.1251953247077940e-02; // O2
+  imw_new[5] = 3.5696437495537948e-02; // N2
+}
+
+//  inverse molecular weight
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+imw(const int n)
+{
+#if AMREX_DEVICE_COMPILE
+  return global_imw[n];
+#else
+  return h_global_imw[n];
+#endif
+}
+//  molecular weights
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+get_mw(amrex::Real* mw_new)
+{
+  mw_new[0] = 1.0020500000000000e+02; // NC7H16
+  mw_new[1] = 1.0020500000000000e+02; // NC7H16_1
+  mw_new[2] = 1.4228600000000000e+02; // NC10H22
+  mw_new[3] = 1.4228600000000000e+02; // NC10H22_1
+  mw_new[4] = 3.1998000000000001e+01; // O2
+  mw_new[5] = 2.8013999999999999e+01; // N2
+}
+
+//  molecular weight
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+mw(const int n)
+{
+#if AMREX_DEVICE_COMPILE
+  return global_mw[n];
+#else
+  return h_global_mw[n];
+#endif
+}
+
+//  Returns R, Rc, Patm
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKRP(amrex::Real& ru, amrex::Real& ruc, amrex::Real& pa)
+{
+  ru = 8.31446261815324e+07;
+  ruc = 1.98721558317399615845;
+  pa = 1.01325e+06;
+}
+
+// compute Cv/R at the given temperature
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+cv_R(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = +2.78245636e+00 - 2.99673416e-03 * T + 9.84730201e-06 * T2 -
+                 9.68129509e-09 * T3 + 3.24372837e-12 * T4;
+    // species 5: N2
+    species[5] = +2.29867700e+00 + 1.40824040e-03 * T - 3.96322200e-06 * T2 +
+                 5.64151500e-09 * T3 - 2.44485400e-12 * T4;
+  } else {
+    // species 4: O2
+    species[4] = +2.28253784e+00 + 1.48308754e-03 * T - 7.57966669e-07 * T2 +
+                 2.09470555e-10 * T3 - 2.16717794e-14 * T4;
+    // species 5: N2
+    species[5] = +1.92664000e+00 + 1.48797680e-03 * T - 5.68476000e-07 * T2 +
+                 1.00970380e-10 * T3 - 6.75335100e-15 * T4;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -2.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+                 1.62945721e-08 * T3 - 2.02394925e-12 * T4;
+    // species 1: NC7H16_1
+    species[1] = -2.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+                 1.62945721e-08 * T3 - 2.02394925e-12 * T4;
+    // species 2: NC10H22
+    species[2] = -3.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+                 2.49834877e-08 * T3 - 3.23548038e-12 * T4;
+    // species 3: NC10H22_1
+    species[3] = -3.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+                 2.49834877e-08 * T3 - 3.23548038e-12 * T4;
+  } else {
+    // species 0: NC7H16
+    species[0] = +2.12148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+                 1.83298478e-09 * T3 - 1.06130266e-13 * T4;
+    // species 1: NC7H16_1
+    species[1] = +2.12148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+                 1.83298478e-09 * T3 - 1.06130266e-13 * T4;
+    // species 2: NC10H22
+    species[2] = +3.09882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+                 2.50963259e-09 * T3 - 1.45215772e-13 * T4;
+    // species 3: NC10H22_1
+    species[3] = +3.09882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+                 2.50963259e-09 * T3 - 1.45215772e-13 * T4;
+  }
+}
+
+// compute Cp/R at the given temperature
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+cp_R(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = +3.78245636e+00 - 2.99673416e-03 * T + 9.84730201e-06 * T2 -
+                 9.68129509e-09 * T3 + 3.24372837e-12 * T4;
+    // species 5: N2
+    species[5] = +3.29867700e+00 + 1.40824040e-03 * T - 3.96322200e-06 * T2 +
+                 5.64151500e-09 * T3 - 2.44485400e-12 * T4;
+  } else {
+    // species 4: O2
+    species[4] = +3.28253784e+00 + 1.48308754e-03 * T - 7.57966669e-07 * T2 +
+                 2.09470555e-10 * T3 - 2.16717794e-14 * T4;
+    // species 5: N2
+    species[5] = +2.92664000e+00 + 1.48797680e-03 * T - 5.68476000e-07 * T2 +
+                 1.00970380e-10 * T3 - 6.75335100e-15 * T4;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -1.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+                 1.62945721e-08 * T3 - 2.02394925e-12 * T4;
+    // species 1: NC7H16_1
+    species[1] = -1.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+                 1.62945721e-08 * T3 - 2.02394925e-12 * T4;
+    // species 2: NC10H22
+    species[2] = -2.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+                 2.49834877e-08 * T3 - 3.23548038e-12 * T4;
+    // species 3: NC10H22_1
+    species[3] = -2.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+                 2.49834877e-08 * T3 - 3.23548038e-12 * T4;
+  } else {
+    // species 0: NC7H16
+    species[0] = +2.22148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+                 1.83298478e-09 * T3 - 1.06130266e-13 * T4;
+    // species 1: NC7H16_1
+    species[1] = +2.22148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+                 1.83298478e-09 * T3 - 1.06130266e-13 * T4;
+    // species 2: NC10H22
+    species[2] = +3.19882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+                 2.50963259e-09 * T3 - 1.45215772e-13 * T4;
+    // species 3: NC10H22_1
+    species[3] = +3.19882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+                 2.50963259e-09 * T3 - 1.45215772e-13 * T4;
+  }
+}
+
+// compute the g/(RT) at the given temperature
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+gibbs(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real invT = 1.0 / T;
+  const amrex::Real logT = log(T);
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = -1.063943560000000e+03 * invT + 1.247806300000001e-01 -
+                 3.782456360000000e+00 * logT + 1.498367080000000e-03 * T -
+                 1.641217001666667e-06 * T2 + 8.067745908333334e-10 * T3 -
+                 1.621864185000000e-13 * T4;
+    // species 5: N2
+    species[5] = -1.020899900000000e+03 * invT - 6.516950000000001e-01 -
+                 3.298677000000000e+00 * logT - 7.041202000000000e-04 * T +
+                 6.605369999999999e-07 * T2 - 4.701262500000001e-10 * T3 +
+                 1.222427000000000e-13 * T4;
+  } else {
+    // species 4: O2
+    species[4] = -1.088457720000000e+03 * invT - 2.170693450000000e+00 -
+                 3.282537840000000e+00 * logT - 7.415437700000000e-04 * T +
+                 1.263277781666667e-07 * T2 - 1.745587958333333e-11 * T3 +
+                 1.083588970000000e-15 * T4;
+    // species 5: N2
+    species[5] = -9.227977000000000e+02 * invT - 3.053888000000000e+00 -
+                 2.926640000000000e+00 * logT - 7.439884000000000e-04 * T +
+                 9.474600000000001e-08 * T2 - 8.414198333333333e-12 * T3 +
+                 3.376675500000000e-16 * T4;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -2.565865650000000e+04 * invT - 3.664165307000000e+01 +
+                 1.268361870000000e+00 * logT - 4.271779100000000e-02 * T +
+                 8.755779766666667e-06 * T2 - 1.357881008333333e-09 * T3 +
+                 1.011974625000000e-13 * T4;
+    // species 1: NC7H16_1
+    species[1] = -2.565865650000000e+04 * invT - 3.664165307000000e+01 +
+                 1.268361870000000e+00 * logT - 4.271779100000000e-02 * T +
+                 8.755779766666667e-06 * T2 - 1.357881008333333e-09 * T3 +
+                 1.011974625000000e-13 * T4;
+    // species 2: NC10H22
+    species[2] = -3.430218630000000e+04 * invT - 4.631018369000000e+01 +
+                 2.084169690000000e+00 * logT - 6.126750600000000e-02 * T +
+                 1.294692898333333e-05 * T2 - 2.081957308333334e-09 * T3 +
+                 1.617740190000000e-13 * T4;
+    // species 3: NC10H22_1
+    species[3] = -3.430218630000000e+04 * invT - 4.631018369000000e+01 +
+                 2.084169690000000e+00 * logT - 6.126750600000000e-02 * T +
+                 1.294692898333333e-05 * T2 - 2.081957308333334e-09 * T3 +
+                 1.617740190000000e-13 * T4;
+  } else {
+    // species 0: NC7H16
+    species[0] = -3.427600810000000e+04 * invT + 1.145189165000000e+02 -
+                 2.221489690000000e+01 * logT - 1.738378750000000e-02 * T +
+                 1.973452150000000e-06 * T2 - 1.527487316666667e-10 * T3 +
+                 5.306513300000000e-15 * T4;
+    // species 1: NC7H16_1
+    species[1] = -3.427600810000000e+04 * invT + 1.145189165000000e+02 -
+                 2.221489690000000e+01 * logT - 1.738378750000000e-02 * T +
+                 1.973452150000000e-06 * T2 - 1.527487316666667e-10 * T3 +
+                 5.306513300000000e-15 * T4;
+    // species 2: NC10H22
+    species[2] = -4.663928400000000e+04 * invT + 1.724923449000000e+02 -
+                 3.198822390000000e+01 * logT - 2.386224610000000e-02 * T +
+                 2.704606516666666e-06 * T2 - 2.091360491666667e-10 * T3 +
+                 7.260788599999999e-15 * T4;
+    // species 3: NC10H22_1
+    species[3] = -4.663928400000000e+04 * invT + 1.724923449000000e+02 -
+                 3.198822390000000e+01 * logT - 2.386224610000000e-02 * T +
+                 2.704606516666666e-06 * T2 - 2.091360491666667e-10 * T3 +
+                 7.260788599999999e-15 * T4;
+  }
+}
+
+// compute the a/(RT) at the given temperature
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+helmholtz(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real invT = 1.0 / T;
+  const amrex::Real logT = log(T);
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = -1.06394356e+03 * invT - 8.75219370e-01 -
+                 3.78245636e+00 * logT + 1.49836708e-03 * T -
+                 1.64121700e-06 * T2 + 8.06774591e-10 * T3 -
+                 1.62186418e-13 * T4;
+    // species 5: N2
+    species[5] = -1.02089990e+03 * invT - 1.65169500e+00 -
+                 3.29867700e+00 * logT - 7.04120200e-04 * T +
+                 6.60537000e-07 * T2 - 4.70126250e-10 * T3 +
+                 1.22242700e-13 * T4;
+  } else {
+    // species 4: O2
+    species[4] = -1.08845772e+03 * invT - 3.17069345e+00 -
+                 3.28253784e+00 * logT - 7.41543770e-04 * T +
+                 1.26327778e-07 * T2 - 1.74558796e-11 * T3 +
+                 1.08358897e-15 * T4;
+    // species 5: N2
+    species[5] = -9.22797700e+02 * invT - 4.05388800e+00 -
+                 2.92664000e+00 * logT - 7.43988400e-04 * T +
+                 9.47460000e-08 * T2 - 8.41419833e-12 * T3 +
+                 3.37667550e-16 * T4;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -2.56586565e+04 * invT - 3.76416531e+01 +
+                 1.26836187e+00 * logT - 4.27177910e-02 * T +
+                 8.75577977e-06 * T2 - 1.35788101e-09 * T3 +
+                 1.01197462e-13 * T4;
+    // species 1: NC7H16_1
+    species[1] = -2.56586565e+04 * invT - 3.76416531e+01 +
+                 1.26836187e+00 * logT - 4.27177910e-02 * T +
+                 8.75577977e-06 * T2 - 1.35788101e-09 * T3 +
+                 1.01197462e-13 * T4;
+    // species 2: NC10H22
+    species[2] = -3.43021863e+04 * invT - 4.73101837e+01 +
+                 2.08416969e+00 * logT - 6.12675060e-02 * T +
+                 1.29469290e-05 * T2 - 2.08195731e-09 * T3 +
+                 1.61774019e-13 * T4;
+    // species 3: NC10H22_1
+    species[3] = -3.43021863e+04 * invT - 4.73101837e+01 +
+                 2.08416969e+00 * logT - 6.12675060e-02 * T +
+                 1.29469290e-05 * T2 - 2.08195731e-09 * T3 +
+                 1.61774019e-13 * T4;
+  } else {
+    // species 0: NC7H16
+    species[0] = -3.42760081e+04 * invT + 1.13518917e+02 -
+                 2.22148969e+01 * logT - 1.73837875e-02 * T +
+                 1.97345215e-06 * T2 - 1.52748732e-10 * T3 +
+                 5.30651330e-15 * T4;
+    // species 1: NC7H16_1
+    species[1] = -3.42760081e+04 * invT + 1.13518917e+02 -
+                 2.22148969e+01 * logT - 1.73837875e-02 * T +
+                 1.97345215e-06 * T2 - 1.52748732e-10 * T3 +
+                 5.30651330e-15 * T4;
+    // species 2: NC10H22
+    species[2] = -4.66392840e+04 * invT + 1.71492345e+02 -
+                 3.19882239e+01 * logT - 2.38622461e-02 * T +
+                 2.70460652e-06 * T2 - 2.09136049e-10 * T3 +
+                 7.26078860e-15 * T4;
+    // species 3: NC10H22_1
+    species[3] = -4.66392840e+04 * invT + 1.71492345e+02 -
+                 3.19882239e+01 * logT - 2.38622461e-02 * T +
+                 2.70460652e-06 * T2 - 2.09136049e-10 * T3 +
+                 7.26078860e-15 * T4;
+  }
+}
+
+// compute the e/(RT) at the given temperature
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+speciesInternalEnergy(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real invT = 1.0 / T;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = +2.78245636e+00 - 1.49836708e-03 * T + 3.28243400e-06 * T2 -
+                 2.42032377e-09 * T3 + 6.48745674e-13 * T4 -
+                 1.06394356e+03 * invT;
+    // species 5: N2
+    species[5] = +2.29867700e+00 + 7.04120200e-04 * T - 1.32107400e-06 * T2 +
+                 1.41037875e-09 * T3 - 4.88970800e-13 * T4 -
+                 1.02089990e+03 * invT;
+  } else {
+    // species 4: O2
+    species[4] = +2.28253784e+00 + 7.41543770e-04 * T - 2.52655556e-07 * T2 +
+                 5.23676387e-11 * T3 - 4.33435588e-15 * T4 -
+                 1.08845772e+03 * invT;
+    // species 5: N2
+    species[5] = +1.92664000e+00 + 7.43988400e-04 * T - 1.89492000e-07 * T2 +
+                 2.52425950e-11 * T3 - 1.35067020e-15 * T4 -
+                 9.22797700e+02 * invT;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -2.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+                 4.07364302e-09 * T3 - 4.04789850e-13 * T4 -
+                 2.56586565e+04 * invT;
+    // species 1: NC7H16_1
+    species[1] = -2.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+                 4.07364302e-09 * T3 - 4.04789850e-13 * T4 -
+                 2.56586565e+04 * invT;
+    // species 2: NC10H22
+    species[2] = -3.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+                 6.24587193e-09 * T3 - 6.47096076e-13 * T4 -
+                 3.43021863e+04 * invT;
+    // species 3: NC10H22_1
+    species[3] = -3.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+                 6.24587193e-09 * T3 - 6.47096076e-13 * T4 -
+                 3.43021863e+04 * invT;
+  } else {
+    // species 0: NC7H16
+    species[0] = +2.12148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+                 4.58246195e-10 * T3 - 2.12260532e-14 * T4 -
+                 3.42760081e+04 * invT;
+    // species 1: NC7H16_1
+    species[1] = +2.12148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+                 4.58246195e-10 * T3 - 2.12260532e-14 * T4 -
+                 3.42760081e+04 * invT;
+    // species 2: NC10H22
+    species[2] = +3.09882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+                 6.27408147e-10 * T3 - 2.90431544e-14 * T4 -
+                 4.66392840e+04 * invT;
+    // species 3: NC10H22_1
+    species[3] = +3.09882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+                 6.27408147e-10 * T3 - 2.90431544e-14 * T4 -
+                 4.66392840e+04 * invT;
+  }
+}
+
+// compute the h/(RT) at the given temperature (Eq 20)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+speciesEnthalpy(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real invT = 1.0 / T;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = +3.78245636e+00 - 1.49836708e-03 * T + 3.28243400e-06 * T2 -
+                 2.42032377e-09 * T3 + 6.48745674e-13 * T4 -
+                 1.06394356e+03 * invT;
+    // species 5: N2
+    species[5] = +3.29867700e+00 + 7.04120200e-04 * T - 1.32107400e-06 * T2 +
+                 1.41037875e-09 * T3 - 4.88970800e-13 * T4 -
+                 1.02089990e+03 * invT;
+  } else {
+    // species 4: O2
+    species[4] = +3.28253784e+00 + 7.41543770e-04 * T - 2.52655556e-07 * T2 +
+                 5.23676387e-11 * T3 - 4.33435588e-15 * T4 -
+                 1.08845772e+03 * invT;
+    // species 5: N2
+    species[5] = +2.92664000e+00 + 7.43988400e-04 * T - 1.89492000e-07 * T2 +
+                 2.52425950e-11 * T3 - 1.35067020e-15 * T4 -
+                 9.22797700e+02 * invT;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -1.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+                 4.07364302e-09 * T3 - 4.04789850e-13 * T4 -
+                 2.56586565e+04 * invT;
+    // species 1: NC7H16_1
+    species[1] = -1.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+                 4.07364302e-09 * T3 - 4.04789850e-13 * T4 -
+                 2.56586565e+04 * invT;
+    // species 2: NC10H22
+    species[2] = -2.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+                 6.24587193e-09 * T3 - 6.47096076e-13 * T4 -
+                 3.43021863e+04 * invT;
+    // species 3: NC10H22_1
+    species[3] = -2.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+                 6.24587193e-09 * T3 - 6.47096076e-13 * T4 -
+                 3.43021863e+04 * invT;
+  } else {
+    // species 0: NC7H16
+    species[0] = +2.22148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+                 4.58246195e-10 * T3 - 2.12260532e-14 * T4 -
+                 3.42760081e+04 * invT;
+    // species 1: NC7H16_1
+    species[1] = +2.22148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+                 4.58246195e-10 * T3 - 2.12260532e-14 * T4 -
+                 3.42760081e+04 * invT;
+    // species 2: NC10H22
+    species[2] = +3.19882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+                 6.27408147e-10 * T3 - 2.90431544e-14 * T4 -
+                 4.66392840e+04 * invT;
+    // species 3: NC10H22_1
+    species[3] = +3.19882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+                 6.27408147e-10 * T3 - 2.90431544e-14 * T4 -
+                 4.66392840e+04 * invT;
+  }
+}
+
+// compute the S/R at the given temperature (Eq 21)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+speciesEntropy(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real logT = log(T);
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = +3.78245636e+00 * logT - 2.99673416e-03 * T +
+                 4.92365101e-06 * T2 - 3.22709836e-09 * T3 +
+                 8.10932092e-13 * T4 + 3.65767573e+00;
+    // species 5: N2
+    species[5] = +3.29867700e+00 * logT + 1.40824040e-03 * T -
+                 1.98161100e-06 * T2 + 1.88050500e-09 * T3 -
+                 6.11213500e-13 * T4 + 3.95037200e+00;
+  } else {
+    // species 4: O2
+    species[4] = +3.28253784e+00 * logT + 1.48308754e-03 * T -
+                 3.78983334e-07 * T2 + 6.98235183e-11 * T3 -
+                 5.41794485e-15 * T4 + 5.45323129e+00;
+    // species 5: N2
+    species[5] = +2.92664000e+00 * logT + 1.48797680e-03 * T -
+                 2.84238000e-07 * T2 + 3.36567933e-11 * T3 -
+                 1.68833775e-15 * T4 + 5.98052800e+00;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = -1.26836187e+00 * logT + 8.54355820e-02 * T -
+                 2.62673393e-05 * T2 + 5.43152403e-09 * T3 -
+                 5.05987313e-13 * T4 + 3.53732912e+01;
+    // species 1: NC7H16_1
+    species[1] = -1.26836187e+00 * logT + 8.54355820e-02 * T -
+                 2.62673393e-05 * T2 + 5.43152403e-09 * T3 -
+                 5.05987313e-13 * T4 + 3.53732912e+01;
+    // species 2: NC10H22
+    species[2] = -2.08416969e+00 * logT + 1.22535012e-01 * T -
+                 3.88407869e-05 * T2 + 8.32782923e-09 * T3 -
+                 8.08870095e-13 * T4 + 4.42260140e+01;
+    // species 3: NC10H22_1
+    species[3] = -2.08416969e+00 * logT + 1.22535012e-01 * T -
+                 3.88407869e-05 * T2 + 8.32782923e-09 * T3 -
+                 8.08870095e-13 * T4 + 4.42260140e+01;
+  } else {
+    // species 0: NC7H16
+    species[0] = +2.22148969e+01 * logT + 3.47675750e-02 * T -
+                 5.92035645e-06 * T2 + 6.10994927e-10 * T3 -
+                 2.65325665e-14 * T4 - 9.23040196e+01;
+    // species 1: NC7H16_1
+    species[1] = +2.22148969e+01 * logT + 3.47675750e-02 * T -
+                 5.92035645e-06 * T2 + 6.10994927e-10 * T3 -
+                 2.65325665e-14 * T4 - 9.23040196e+01;
+    // species 2: NC10H22
+    species[2] = +3.19882239e+01 * logT + 4.77244922e-02 * T -
+                 8.11381955e-06 * T2 + 8.36544197e-10 * T3 -
+                 3.63039430e-14 * T4 - 1.40504121e+02;
+    // species 3: NC10H22_1
+    species[3] = +3.19882239e+01 * logT + 4.77244922e-02 * T -
+                 8.11381955e-06 * T2 + 8.36544197e-10 * T3 -
+                 3.63039430e-14 * T4 - 1.40504121e+02;
+  }
+}
+
+// compute d(Cp/R)/dT and d(Cv/R)/dT at the given temperature
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+dcvpRdT(amrex::Real* species, const amrex::Real T)
+{
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    species[4] = -2.99673416e-03 + 1.96946040e-05 * T - 2.90438853e-08 * T2 +
+                 1.29749135e-11 * T3;
+    // species 5: N2
+    species[5] = +1.40824040e-03 - 7.92644400e-06 * T + 1.69245450e-08 * T2 -
+                 9.77941600e-12 * T3;
+  } else {
+    // species 4: O2
+    species[4] = +1.48308754e-03 - 1.51593334e-06 * T + 6.28411665e-10 * T2 -
+                 8.66871176e-14 * T3;
+    // species 5: N2
+    species[5] = +1.48797680e-03 - 1.13695200e-06 * T + 3.02911140e-10 * T2 -
+                 2.70134040e-14 * T3;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    species[0] = +8.54355820e-02 - 1.05069357e-04 * T + 4.88837163e-08 * T2 -
+                 8.09579700e-12 * T3;
+    // species 1: NC7H16_1
+    species[1] = +8.54355820e-02 - 1.05069357e-04 * T + 4.88837163e-08 * T2 -
+                 8.09579700e-12 * T3;
+    // species 2: NC10H22
+    species[2] = +1.22535012e-01 - 1.55363148e-04 * T + 7.49504631e-08 * T2 -
+                 1.29419215e-11 * T3;
+    // species 3: NC10H22_1
+    species[3] = +1.22535012e-01 - 1.55363148e-04 * T + 7.49504631e-08 * T2 -
+                 1.29419215e-11 * T3;
+  } else {
+    // species 0: NC7H16
+    species[0] = +3.47675750e-02 - 2.36814258e-05 * T + 5.49895434e-09 * T2 -
+                 4.24521064e-13 * T3;
+    // species 1: NC7H16_1
+    species[1] = +3.47675750e-02 - 2.36814258e-05 * T + 5.49895434e-09 * T2 -
+                 4.24521064e-13 * T3;
+    // species 2: NC10H22
+    species[2] = +4.77244922e-02 - 3.24552782e-05 * T + 7.52889777e-09 * T2 -
+                 5.80863088e-13 * T3;
+    // species 3: NC10H22_1
+    species[3] = +4.77244922e-02 - 3.24552782e-05 * T + 7.52889777e-09 * T2 -
+                 5.80863088e-13 * T3;
+  }
+}
+
+// Returns the mean specific heat at CP (Eq. 33)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCPBL(const amrex::Real T, const amrex::Real x[], amrex::Real& cpbl)
+{
+  amrex::Real result = 0;
+  amrex::Real cpor[6]; //  temporary storage
+  cp_R(cpor, T);
+
+  // perform dot product
+  for (int id = 0; id < 6; ++id) {
+    result += x[id] * cpor[id];
+  }
+
+  cpbl = result * 8.31446261815324e+07;
+}
+
+// Returns the mean specific heat at CP (Eq. 34)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCPBS(const amrex::Real T, const amrex::Real y[], amrex::Real& cpbs)
+{
+  amrex::Real result = 0.0;
+
+  // compute Cp/R at the given temperature
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    result += y[4] *
+              (+3.78245636e+00 - 2.99673416e-03 * T + 9.84730201e-06 * T2 -
+               9.68129509e-09 * T3 + 3.24372837e-12 * T4) *
+              0.0312519532470779;
+    // species 5: N2
+    result += y[5] *
+              (+3.29867700e+00 + 1.40824040e-03 * T - 3.96322200e-06 * T2 +
+               5.64151500e-09 * T3 - 2.44485400e-12 * T4) *
+              0.0356964374955379;
+  } else {
+    // species 4: O2
+    result += y[4] *
+              (+3.28253784e+00 + 1.48308754e-03 * T - 7.57966669e-07 * T2 +
+               2.09470555e-10 * T3 - 2.16717794e-14 * T4) *
+              0.0312519532470779;
+    // species 5: N2
+    result += y[5] *
+              (+2.92664000e+00 + 1.48797680e-03 * T - 5.68476000e-07 * T2 +
+               1.00970380e-10 * T3 - 6.75335100e-15 * T4) *
+              0.0356964374955379;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    result += y[0] *
+              (-1.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+               1.62945721e-08 * T3 - 2.02394925e-12 * T4) *
+              0.0099795419390250;
+    // species 1: NC7H16_1
+    result += y[1] *
+              (-1.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+               1.62945721e-08 * T3 - 2.02394925e-12 * T4) *
+              0.0099795419390250;
+    // species 2: NC10H22
+    result += y[2] *
+              (-2.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+               2.49834877e-08 * T3 - 3.23548038e-12 * T4) *
+              0.0070280983371519;
+    // species 3: NC10H22_1
+    result += y[3] *
+              (-2.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+               2.49834877e-08 * T3 - 3.23548038e-12 * T4) *
+              0.0070280983371519;
+  } else {
+    // species 0: NC7H16
+    result += y[0] *
+              (+2.22148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+               1.83298478e-09 * T3 - 1.06130266e-13 * T4) *
+              0.0099795419390250;
+    // species 1: NC7H16_1
+    result += y[1] *
+              (+2.22148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+               1.83298478e-09 * T3 - 1.06130266e-13 * T4) *
+              0.0099795419390250;
+    // species 2: NC10H22
+    result += y[2] *
+              (+3.19882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+               2.50963259e-09 * T3 - 1.45215772e-13 * T4) *
+              0.0070280983371519;
+    // species 3: NC10H22_1
+    result += y[3] *
+              (+3.19882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+               2.50963259e-09 * T3 - 1.45215772e-13 * T4) *
+              0.0070280983371519;
+  }
+
+  cpbs = result * 8.31446261815324e+07;
+}
+
+// Returns the mean specific heat at CV (Eq. 35)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCVBL(const amrex::Real T, const amrex::Real x[], amrex::Real& cvbl)
+{
+  amrex::Real result = 0;
+  amrex::Real cvor[6]; //  temporary storage
+  cv_R(cvor, T);
+
+  // perform dot product
+  for (int id = 0; id < 6; ++id) {
+    result += x[id] * cvor[id];
+  }
+
+  cvbl = result * 8.31446261815324e+07;
+}
+
+// Returns the mean specific heat at CV (Eq. 36)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCVBS(const amrex::Real T, const amrex::Real y[], amrex::Real& cvbs)
+{
+  amrex::Real result = 0.0;
+  // compute Cv/R at the given temperature
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    result += y[4] *
+              (+2.78245636e+00 - 2.99673416e-03 * T + 9.84730201e-06 * T2 -
+               9.68129509e-09 * T3 + 3.24372837e-12 * T4) *
+              0.0312519532470779;
+    // species 5: N2
+    result += y[5] *
+              (+2.29867700e+00 + 1.40824040e-03 * T - 3.96322200e-06 * T2 +
+               5.64151500e-09 * T3 - 2.44485400e-12 * T4) *
+              0.0356964374955379;
+  } else {
+    // species 4: O2
+    result += y[4] *
+              (+2.28253784e+00 + 1.48308754e-03 * T - 7.57966669e-07 * T2 +
+               2.09470555e-10 * T3 - 2.16717794e-14 * T4) *
+              0.0312519532470779;
+    // species 5: N2
+    result += y[5] *
+              (+1.92664000e+00 + 1.48797680e-03 * T - 5.68476000e-07 * T2 +
+               1.00970380e-10 * T3 - 6.75335100e-15 * T4) *
+              0.0356964374955379;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    result += y[0] *
+              (-2.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+               1.62945721e-08 * T3 - 2.02394925e-12 * T4) *
+              0.0099795419390250;
+    // species 1: NC7H16_1
+    result += y[1] *
+              (-2.26836187e+00 + 8.54355820e-02 * T - 5.25346786e-05 * T2 +
+               1.62945721e-08 * T3 - 2.02394925e-12 * T4) *
+              0.0099795419390250;
+    // species 2: NC10H22
+    result += y[2] *
+              (-3.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+               2.49834877e-08 * T3 - 3.23548038e-12 * T4) *
+              0.0070280983371519;
+    // species 3: NC10H22_1
+    result += y[3] *
+              (-3.08416969e+00 + 1.22535012e-01 * T - 7.76815739e-05 * T2 +
+               2.49834877e-08 * T3 - 3.23548038e-12 * T4) *
+              0.0070280983371519;
+  } else {
+    // species 0: NC7H16
+    result += y[0] *
+              (+2.12148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+               1.83298478e-09 * T3 - 1.06130266e-13 * T4) *
+              0.0099795419390250;
+    // species 1: NC7H16_1
+    result += y[1] *
+              (+2.12148969e+01 + 3.47675750e-02 * T - 1.18407129e-05 * T2 +
+               1.83298478e-09 * T3 - 1.06130266e-13 * T4) *
+              0.0099795419390250;
+    // species 2: NC10H22
+    result += y[2] *
+              (+3.09882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+               2.50963259e-09 * T3 - 1.45215772e-13 * T4) *
+              0.0070280983371519;
+    // species 3: NC10H22_1
+    result += y[3] *
+              (+3.09882239e+01 + 4.77244922e-02 * T - 1.62276391e-05 * T2 +
+               2.50963259e-09 * T3 - 1.45215772e-13 * T4) *
+              0.0070280983371519;
+  }
+
+  cvbs = result * 8.31446261815324e+07;
+}
+
+// Returns the mean enthalpy of the mixture in molar units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKHBML(const amrex::Real T, const amrex::Real x[], amrex::Real& hbml)
+{
+  amrex::Real result = 0;
+  amrex::Real hml[6];                        //  temporary storage
+  amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+  speciesEnthalpy(hml, T);
+
+  // perform dot product
+  for (int id = 0; id < 6; ++id) {
+    result += x[id] * hml[id];
+  }
+
+  hbml = result * RT;
+}
+
+// Returns mean enthalpy of mixture in mass units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKHBMS(const amrex::Real T, const amrex::Real y[], amrex::Real& hbms)
+{
+  amrex::Real result = 0.0;
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real invT = 1.0 / T;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    result +=
+      y[4] *
+      (+3.78245636e+00 - 1.49836708e-03 * T + 3.28243400e-06 * T2 -
+       2.42032377e-09 * T3 + 6.48745674e-13 * T4 - 1.06394356e+03 * invT) *
+      0.0312519532470779;
+    // species 5: N2
+    result +=
+      y[5] *
+      (+3.29867700e+00 + 7.04120200e-04 * T - 1.32107400e-06 * T2 +
+       1.41037875e-09 * T3 - 4.88970800e-13 * T4 - 1.02089990e+03 * invT) *
+      0.0356964374955379;
+  } else {
+    // species 4: O2
+    result +=
+      y[4] *
+      (+3.28253784e+00 + 7.41543770e-04 * T - 2.52655556e-07 * T2 +
+       5.23676387e-11 * T3 - 4.33435588e-15 * T4 - 1.08845772e+03 * invT) *
+      0.0312519532470779;
+    // species 5: N2
+    result +=
+      y[5] *
+      (+2.92664000e+00 + 7.43988400e-04 * T - 1.89492000e-07 * T2 +
+       2.52425950e-11 * T3 - 1.35067020e-15 * T4 - 9.22797700e+02 * invT) *
+      0.0356964374955379;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    result +=
+      y[0] *
+      (-1.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+       4.07364302e-09 * T3 - 4.04789850e-13 * T4 - 2.56586565e+04 * invT) *
+      0.0099795419390250;
+    // species 1: NC7H16_1
+    result +=
+      y[1] *
+      (-1.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+       4.07364302e-09 * T3 - 4.04789850e-13 * T4 - 2.56586565e+04 * invT) *
+      0.0099795419390250;
+    // species 2: NC10H22
+    result +=
+      y[2] *
+      (-2.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+       6.24587193e-09 * T3 - 6.47096076e-13 * T4 - 3.43021863e+04 * invT) *
+      0.0070280983371519;
+    // species 3: NC10H22_1
+    result +=
+      y[3] *
+      (-2.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+       6.24587193e-09 * T3 - 6.47096076e-13 * T4 - 3.43021863e+04 * invT) *
+      0.0070280983371519;
+  } else {
+    // species 0: NC7H16
+    result +=
+      y[0] *
+      (+2.22148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+       4.58246195e-10 * T3 - 2.12260532e-14 * T4 - 3.42760081e+04 * invT) *
+      0.0099795419390250;
+    // species 1: NC7H16_1
+    result +=
+      y[1] *
+      (+2.22148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+       4.58246195e-10 * T3 - 2.12260532e-14 * T4 - 3.42760081e+04 * invT) *
+      0.0099795419390250;
+    // species 2: NC10H22
+    result +=
+      y[2] *
+      (+3.19882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+       6.27408147e-10 * T3 - 2.90431544e-14 * T4 - 4.66392840e+04 * invT) *
+      0.0070280983371519;
+    // species 3: NC10H22_1
+    result +=
+      y[3] *
+      (+3.19882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+       6.27408147e-10 * T3 - 2.90431544e-14 * T4 - 4.66392840e+04 * invT) *
+      0.0070280983371519;
+  }
+
+  const amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+
+  hbms = result * RT;
+}
+
+// get mean internal energy in molar units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKUBML(const amrex::Real T, const amrex::Real x[], amrex::Real& ubml)
+{
+  amrex::Real result = 0;
+  amrex::Real uml[6];                        //  temporary energy array
+  amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+  speciesInternalEnergy(uml, T);
+
+  // perform dot product
+  for (int id = 0; id < 6; ++id) {
+    result += x[id] * uml[id];
+  }
+
+  ubml = result * RT;
+}
+
+// get mean internal energy in mass units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKUBMS(const amrex::Real T, const amrex::Real y[], amrex::Real& ubms)
+{
+  amrex::Real result = 0.0;
+  const amrex::Real T2 = T * T;
+  const amrex::Real T3 = T * T2;
+  const amrex::Real T4 = T * T3;
+  const amrex::Real invT = 1.0 / T;
+
+  // species with midpoint at T=1000 kelvin
+  if (T < 1000) {
+    // species 4: O2
+    result +=
+      y[4] *
+      (+2.78245636e+00 - 1.49836708e-03 * T + 3.28243400e-06 * T2 -
+       2.42032377e-09 * T3 + 6.48745674e-13 * T4 - 1.06394356e+03 * invT) *
+      0.0312519532470779;
+    // species 5: N2
+    result +=
+      y[5] *
+      (+2.29867700e+00 + 7.04120200e-04 * T - 1.32107400e-06 * T2 +
+       1.41037875e-09 * T3 - 4.88970800e-13 * T4 - 1.02089990e+03 * invT) *
+      0.0356964374955379;
+  } else {
+    // species 4: O2
+    result +=
+      y[4] *
+      (+2.28253784e+00 + 7.41543770e-04 * T - 2.52655556e-07 * T2 +
+       5.23676387e-11 * T3 - 4.33435588e-15 * T4 - 1.08845772e+03 * invT) *
+      0.0312519532470779;
+    // species 5: N2
+    result +=
+      y[5] *
+      (+1.92664000e+00 + 7.43988400e-04 * T - 1.89492000e-07 * T2 +
+       2.52425950e-11 * T3 - 1.35067020e-15 * T4 - 9.22797700e+02 * invT) *
+      0.0356964374955379;
+  }
+
+  // species with midpoint at T=1391 kelvin
+  if (T < 1391) {
+    // species 0: NC7H16
+    result +=
+      y[0] *
+      (-2.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+       4.07364302e-09 * T3 - 4.04789850e-13 * T4 - 2.56586565e+04 * invT) *
+      0.0099795419390250;
+    // species 1: NC7H16_1
+    result +=
+      y[1] *
+      (-2.26836187e+00 + 4.27177910e-02 * T - 1.75115595e-05 * T2 +
+       4.07364302e-09 * T3 - 4.04789850e-13 * T4 - 2.56586565e+04 * invT) *
+      0.0099795419390250;
+    // species 2: NC10H22
+    result +=
+      y[2] *
+      (-3.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+       6.24587193e-09 * T3 - 6.47096076e-13 * T4 - 3.43021863e+04 * invT) *
+      0.0070280983371519;
+    // species 3: NC10H22_1
+    result +=
+      y[3] *
+      (-3.08416969e+00 + 6.12675060e-02 * T - 2.58938580e-05 * T2 +
+       6.24587193e-09 * T3 - 6.47096076e-13 * T4 - 3.43021863e+04 * invT) *
+      0.0070280983371519;
+  } else {
+    // species 0: NC7H16
+    result +=
+      y[0] *
+      (+2.12148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+       4.58246195e-10 * T3 - 2.12260532e-14 * T4 - 3.42760081e+04 * invT) *
+      0.0099795419390250;
+    // species 1: NC7H16_1
+    result +=
+      y[1] *
+      (+2.12148969e+01 + 1.73837875e-02 * T - 3.94690430e-06 * T2 +
+       4.58246195e-10 * T3 - 2.12260532e-14 * T4 - 3.42760081e+04 * invT) *
+      0.0099795419390250;
+    // species 2: NC10H22
+    result +=
+      y[2] *
+      (+3.09882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+       6.27408147e-10 * T3 - 2.90431544e-14 * T4 - 4.66392840e+04 * invT) *
+      0.0070280983371519;
+    // species 3: NC10H22_1
+    result +=
+      y[3] *
+      (+3.09882239e+01 + 2.38622461e-02 * T - 5.40921303e-06 * T2 +
+       6.27408147e-10 * T3 - 2.90431544e-14 * T4 - 4.66392840e+04 * invT) *
+      0.0070280983371519;
+  }
+
+  const amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+
+  ubms = result * RT;
+}
+
+// get mixture entropy in molar units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKSBML(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real x[],
+  amrex::Real& sbml)
+{
+  amrex::Real result = 0;
+  // Log of normalized pressure in cgs units dynes/cm^2 by Patm
+  amrex::Real logPratio = log(P / 1013250.0);
+  amrex::Real sor[6]; //  temporary storage
+  speciesEntropy(sor, T);
+
+  // Compute Eq 42
+  for (int id = 0; id < 6; ++id) {
+    result += x[id] * (sor[id] - log((x[id] + 1e-100)) - logPratio);
+  }
+
+  sbml = result * 8.31446261815324e+07;
+}
+
+// get mixture entropy in mass units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKSBMS(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real y[],
+  amrex::Real& sbms)
+{
+  amrex::Real result = 0;
+  // Log of normalized pressure in cgs units dynes/cm^2 by Patm
+  amrex::Real logPratio = log(P / 1013250.0);
+  amrex::Real sor[6];  //  temporary storage
+  amrex::Real x[6];    //  need a ytx conversion
+  amrex::Real YOW = 0; // See Eq 4, 6 in CK Manual
+
+  // Compute inverse of mean molecular wt first
+  for (int i = 0; i < 6; i++) {
+    YOW += y[i] * imw(i);
+  }
+  // Now compute y to x conversion
+  x[0] = y[0] / (1.0020500000000000e+02 * YOW);
+  x[1] = y[1] / (1.0020500000000000e+02 * YOW);
+  x[2] = y[2] / (1.4228600000000000e+02 * YOW);
+  x[3] = y[3] / (1.4228600000000000e+02 * YOW);
+  x[4] = y[4] / (3.1998000000000001e+01 * YOW);
+  x[5] = y[5] / (2.8013999999999999e+01 * YOW);
+  speciesEntropy(sor, T);
+  // Perform computation in Eq 42 and 43
+  for (int i = 0; i < 6; i++) {
+    result += x[i] * (sor[i] - log((x[i] + 1e-100)) - logPratio);
+  }
+  // Scale by R/W
+  sbms = result * 8.31446261815324e+07 * YOW;
+}
+
+//  get temperature given internal energy in mass units and mass fracs
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+GET_T_GIVEN_EY(
+  const amrex::Real e, const amrex::Real y[], amrex::Real& t, int& ierr)
+{
+#ifdef CONVERGENCE
+  const int maxiter = 5000;
+  const amrex::Real tol = 1.e-12;
+#else
+  const int maxiter = 200;
+  const amrex::Real tol = 1.e-6;
+#endif
+  amrex::Real tmin = 300.0;  // max lower bound for thermo def
+  amrex::Real tmax = 3500.0; // min upper bound for thermo def
+  amrex::Real e1, emin, emax, cv, t1, dt;
+  CKUBMS(tmin, y, emin);
+  CKUBMS(tmax, y, emax);
+  if (e < emin) {
+    // Linear Extrapolation below tmin
+    CKCVBS(tmin, y, cv);
+    t = tmin - (emin - e) / cv;
+    ierr = 1;
+    return;
+  }
+  if (e > emax) {
+    // Linear Extrapolation above tmax
+    CKCVBS(tmax, y, cv);
+    t = tmax - (emax - e) / cv;
+    ierr = 1;
+    return;
+  }
+  t1 = t;
+  if (t1 < tmin || t1 > tmax) {
+    t1 = tmin + (tmax - tmin) / (emax - emin) * (e - emin);
+  }
+  for (int i = 0; i < maxiter; ++i) {
+    CKUBMS(t1, y, e1);
+    CKCVBS(t1, y, cv);
+    dt = (e - e1) / cv;
+    if (dt > 100.) {
+      dt = 100.;
+    } else if (dt < -100.) {
+      dt = -100.;
+    } else if (fabs(dt) < tol) {
+      break;
+    }
+    t1 += dt;
+  }
+  t = t1;
+  ierr = 0;
+}
+
+//  get temperature given enthalpy in mass units and mass fracs
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+GET_T_GIVEN_HY(
+  const amrex::Real h, const amrex::Real y[], amrex::Real& t, int& ierr)
+{
+#ifdef CONVERGENCE
+  const int maxiter = 5000;
+  const amrex::Real tol = 1.e-12;
+#else
+  const int maxiter = 200;
+  const amrex::Real tol = 1.e-6;
+#endif
+  amrex::Real tmin = 300.0;  // max lower bound for thermo def
+  amrex::Real tmax = 3500.0; // min upper bound for thermo def
+  amrex::Real h1, hmin, hmax, cp, t1, dt;
+  CKHBMS(tmin, y, hmin);
+  CKHBMS(tmax, y, hmax);
+  if (h < hmin) {
+    // Linear Extrapolation below tmin
+    CKCPBS(tmin, y, cp);
+    t = tmin - (hmin - h) / cp;
+    ierr = 1;
+    return;
+  }
+  if (h > hmax) {
+    // Linear Extrapolation above tmax
+    CKCPBS(tmax, y, cp);
+    t = tmax - (hmax - h) / cp;
+    ierr = 1;
+    return;
+  }
+  t1 = t;
+  if (t1 < tmin || t1 > tmax) {
+    t1 = tmin + (tmax - tmin) / (hmax - hmin) * (h - hmin);
+  }
+  for (int i = 0; i < maxiter; ++i) {
+    CKHBMS(t1, y, h1);
+    CKCPBS(t1, y, cp);
+    dt = (h - h1) / cp;
+    if (dt > 100.) {
+      dt = 100.;
+    } else if (dt < -100.) {
+      dt = -100.;
+    } else if (fabs(dt) < tol) {
+      break;
+    }
+    t1 += dt;
+  }
+  t = t1;
+  ierr = 0;
+}
+
+// Compute P = rhoRT/W(x)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKPX(
+  const amrex::Real rho,
+  const amrex::Real T,
+  const amrex::Real x[],
+  amrex::Real& P)
+{
+  amrex::Real XW = 0;                      //  To hold mean molecular wt
+  XW += x[0] * 1.0020500000000000e+02;     // NC7H16
+  XW += x[1] * 1.0020500000000000e+02;     // NC7H16_1
+  XW += x[2] * 1.4228600000000000e+02;     // NC10H22
+  XW += x[3] * 1.4228600000000000e+02;     // NC10H22_1
+  XW += x[4] * 3.1998000000000001e+01;     // O2
+  XW += x[5] * 2.8013999999999999e+01;     // N2
+  P = rho * 8.31446261815324e+07 * T / XW; // P = rho*R*T/W
+}
+
+// Compute P = rhoRT/W(y)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKPY(
+  const amrex::Real rho,
+  const amrex::Real T,
+  const amrex::Real y[],
+  amrex::Real& P)
+{
+  amrex::Real YOW = 0; //  for computing mean MW
+
+  for (int i = 0; i < 6; i++) {
+    YOW += y[i] * imw(i);
+  }
+  P = rho * 8.31446261815324e+07 * T * YOW; // P = rho*R*T/W
+}
+
+// Compute P = rhoRT/W(c)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKPC(
+  const amrex::Real rho,
+  const amrex::Real T,
+  const amrex::Real c[],
+  amrex::Real& P)
+{
+  // See Eq 5 in CK Manual
+  amrex::Real W = 0;
+  amrex::Real sumC = 0;
+  W += c[0] * 1.0020500000000000e+02; // NC7H16
+  W += c[1] * 1.0020500000000000e+02; // NC7H16_1
+  W += c[2] * 1.4228600000000000e+02; // NC10H22
+  W += c[3] * 1.4228600000000000e+02; // NC10H22_1
+  W += c[4] * 3.1998000000000001e+01; // O2
+  W += c[5] * 2.8013999999999999e+01; // N2
+
+  for (int id = 0; id < 6; ++id) {
+    sumC += c[id];
+  }
+  P = rho * 8.31446261815324e+07 * T * sumC / W; // P = rho*R*T/W
+}
+
+// Compute rho = PW(x)/RT
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKRHOX(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real x[],
+  amrex::Real& rho)
+{
+  amrex::Real XW = 0;                        //  To hold mean molecular wt
+  XW += x[0] * 1.0020500000000000e+02;       // NC7H16
+  XW += x[1] * 1.0020500000000000e+02;       // NC7H16_1
+  XW += x[2] * 1.4228600000000000e+02;       // NC10H22
+  XW += x[3] * 1.4228600000000000e+02;       // NC10H22_1
+  XW += x[4] * 3.1998000000000001e+01;       // O2
+  XW += x[5] * 2.8013999999999999e+01;       // N2
+  rho = P * XW / (8.31446261815324e+07 * T); // rho = P*W/(R*T)
+}
+
+// Compute rho = P*W(y)/RT
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKRHOY(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real y[],
+  amrex::Real& rho)
+{
+  amrex::Real YOW = 0;
+
+  for (int i = 0; i < 6; i++) {
+    YOW += y[i] * imw(i);
+  }
+
+  rho = P / (8.31446261815324e+07 * T * YOW); // rho = P*W/(R*T)
+}
+
+// Compute rho = P*W(c)/(R*T)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKRHOC(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real c[],
+  amrex::Real& rho)
+{
+  // See Eq 5 in CK Manual
+  amrex::Real W = 0;
+  amrex::Real sumC = 0;
+  W += c[0] * 1.0020500000000000e+02; // NC7H16
+  W += c[1] * 1.0020500000000000e+02; // NC7H16_1
+  W += c[2] * 1.4228600000000000e+02; // NC10H22
+  W += c[3] * 1.4228600000000000e+02; // NC10H22_1
+  W += c[4] * 3.1998000000000001e+01; // O2
+  W += c[5] * 2.8013999999999999e+01; // N2
+
+  for (int id = 0; id < 6; ++id) {
+    sumC += c[id];
+  }
+  rho = P * W / (sumC * T * 8.31446261815324e+07); // rho = PW/(R*T)
+}
+
+// get molecular weight for all species
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKWT(amrex::Real wt[])
+{
+  get_mw(wt);
+}
+
+// given y[species]: mass fractions
+// s mean molecular weight (gm/mole)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKMMWY(const amrex::Real y[], amrex::Real& wtm)
+{
+  amrex::Real YOW = 0;
+
+  for (int i = 0; i < 6; i++) {
+    YOW += y[i] * imw(i);
+  }
+
+  wtm = 1.0 / YOW;
+}
+
+// given x[species]: mole fractions
+// returns mean molecular weight (gm/mole)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKMMWX(const amrex::Real x[], amrex::Real& wtm)
+{
+  amrex::Real XW = 0;                  //  see Eq 4 in CK Manual
+  XW += x[0] * 1.0020500000000000e+02; // NC7H16
+  XW += x[1] * 1.0020500000000000e+02; // NC7H16_1
+  XW += x[2] * 1.4228600000000000e+02; // NC10H22
+  XW += x[3] * 1.4228600000000000e+02; // NC10H22_1
+  XW += x[4] * 3.1998000000000001e+01; // O2
+  XW += x[5] * 2.8013999999999999e+01; // N2
+  wtm = XW;
+}
+
+// given c[species]: molar concentration
+// returns mean molecular weight (gm/mole)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKMMWC(const amrex::Real c[], amrex::Real& wtm)
+{
+  // See Eq 5 in CK Manual
+  amrex::Real W = 0;
+  amrex::Real sumC = 0;
+  W += c[0] * 1.0020500000000000e+02; // NC7H16
+  W += c[1] * 1.0020500000000000e+02; // NC7H16_1
+  W += c[2] * 1.4228600000000000e+02; // NC10H22
+  W += c[3] * 1.4228600000000000e+02; // NC10H22_1
+  W += c[4] * 3.1998000000000001e+01; // O2
+  W += c[5] * 2.8013999999999999e+01; // N2
+
+  for (int id = 0; id < 6; ++id) {
+    sumC += c[id];
+  }
+  //  CK provides no guard against division by zero
+  wtm = W / sumC;
+}
+
+// get Cp/R as a function of T
+// for all species (Eq 19)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCPOR(const amrex::Real T, amrex::Real cpor[])
+{
+  cp_R(cpor, T);
+}
+
+// get H/RT as a function of T
+// for all species (Eq 20)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKHORT(const amrex::Real T, amrex::Real hort[])
+{
+  speciesEnthalpy(hort, T);
+}
+
+// get S/R as a function of T
+// for all species (Eq 21)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKSOR(const amrex::Real T, amrex::Real sor[])
+{
+  speciesEntropy(sor, T);
+}
+
+// convert y[species] (mass fracs) to x[species] (mole fracs)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKYTX(const amrex::Real y[], amrex::Real x[])
+{
+  amrex::Real YOW = 0;
+
+  for (int i = 0; i < 6; i++) {
+    YOW += y[i] * imw(i);
+  }
+
+  amrex::Real YOWINV = 1.0 / YOW;
+
+  for (int i = 0; i < 6; i++) {
+    x[i] = y[i] * imw(i) * YOWINV;
+  }
+}
+
+// convert y[species] (mass fracs) to c[species] (molar conc)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKYTCP(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real y[],
+  amrex::Real c[])
+{
+  amrex::Real YOW = 0;
+  amrex::Real PWORT;
+
+  // Compute inverse of mean molecular wt first
+  for (int i = 0; i < 6; i++) {
+    c[i] = y[i] * imw(i);
+  }
+  for (int i = 0; i < 6; i++) {
+    YOW += c[i];
+  }
+
+  // PW/RT (see Eq. 7)
+  PWORT = P / (YOW * 8.31446261815324e+07 * T);
+  // Now compute conversion
+
+  for (int i = 0; i < 6; i++) {
+    c[i] = PWORT * y[i] * imw(i);
+  }
+}
+
+// convert y[species] (mass fracs) to c[species] (molar conc)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKYTCR(
+  const amrex::Real rho,
+  amrex::Real /*T*/,
+  const amrex::Real y[],
+  amrex::Real c[])
+{
+
+  for (int i = 0; i < 6; i++) {
+    c[i] = rho * y[i] * imw(i);
+  }
+}
+
+// convert x[species] (mole fracs) to y[species] (mass fracs)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKXTY(const amrex::Real x[], amrex::Real y[])
+{
+  amrex::Real XW = 0; // See Eq 4, 9 in CK Manual
+  // Compute mean molecular wt first
+  XW += x[0] * 1.0020500000000000e+02; // NC7H16
+  XW += x[1] * 1.0020500000000000e+02; // NC7H16_1
+  XW += x[2] * 1.4228600000000000e+02; // NC10H22
+  XW += x[3] * 1.4228600000000000e+02; // NC10H22_1
+  XW += x[4] * 3.1998000000000001e+01; // O2
+  XW += x[5] * 2.8013999999999999e+01; // N2
+  // Now compute conversion
+  amrex::Real XWinv = 1.0 / XW;
+  y[0] = x[0] * 1.0020500000000000e+02 * XWinv;
+  y[1] = x[1] * 1.0020500000000000e+02 * XWinv;
+  y[2] = x[2] * 1.4228600000000000e+02 * XWinv;
+  y[3] = x[3] * 1.4228600000000000e+02 * XWinv;
+  y[4] = x[4] * 3.1998000000000001e+01 * XWinv;
+  y[5] = x[5] * 2.8013999999999999e+01 * XWinv;
+}
+
+// convert x[species] (mole fracs) to c[species] (molar conc)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKXTCP(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real x[],
+  amrex::Real c[])
+{
+  amrex::Real PORT = P / (8.31446261815324e+07 * T); // P/RT
+
+  // Compute conversion, see Eq 10
+  for (int id = 0; id < 6; ++id) {
+    c[id] = x[id] * PORT;
+  }
+}
+
+// convert x[species] (mole fracs) to c[species] (molar conc)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKXTCR(
+  const amrex::Real rho,
+  const amrex::Real /*T*/,
+  const amrex::Real x[],
+  amrex::Real c[])
+{
+  amrex::Real XW = 0; // See Eq 4, 11 in CK Manual
+  amrex::Real ROW;
+  // Compute mean molecular wt first
+  XW += x[0] * 1.0020500000000000e+02; // NC7H16
+  XW += x[1] * 1.0020500000000000e+02; // NC7H16_1
+  XW += x[2] * 1.4228600000000000e+02; // NC10H22
+  XW += x[3] * 1.4228600000000000e+02; // NC10H22_1
+  XW += x[4] * 3.1998000000000001e+01; // O2
+  XW += x[5] * 2.8013999999999999e+01; // N2
+  ROW = rho / XW;
+
+  // Compute conversion, see Eq 11
+  for (int id = 0; id < 6; ++id) {
+    c[id] = x[id] * ROW;
+  }
+}
+
+// convert c[species] (molar conc) to x[species] (mole fracs)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCTX(const amrex::Real c[], amrex::Real x[])
+{
+  amrex::Real sumC = 0;
+
+  // compute sum of c
+  for (int id = 0; id < 6; ++id) {
+    sumC += c[id];
+  }
+
+  //  See Eq 13
+  amrex::Real sumCinv = 1.0 / sumC;
+  for (int id = 0; id < 6; ++id) {
+    x[id] = c[id] * sumCinv;
+  }
+}
+
+// convert c[species] (molar conc) to y[species] (mass fracs)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCTY(const amrex::Real c[], amrex::Real y[])
+{
+  amrex::Real CW = 0; // See Eq 12 in CK Manual
+  // compute denominator in eq 12 first
+  CW += c[0] * 1.0020500000000000e+02; // NC7H16
+  CW += c[1] * 1.0020500000000000e+02; // NC7H16_1
+  CW += c[2] * 1.4228600000000000e+02; // NC10H22
+  CW += c[3] * 1.4228600000000000e+02; // NC10H22_1
+  CW += c[4] * 3.1998000000000001e+01; // O2
+  CW += c[5] * 2.8013999999999999e+01; // N2
+  // Now compute conversion
+  amrex::Real CWinv = 1.0 / CW;
+  y[0] = c[0] * 1.0020500000000000e+02 * CWinv;
+  y[1] = c[1] * 1.0020500000000000e+02 * CWinv;
+  y[2] = c[2] * 1.4228600000000000e+02 * CWinv;
+  y[3] = c[3] * 1.4228600000000000e+02 * CWinv;
+  y[4] = c[4] * 3.1998000000000001e+01 * CWinv;
+  y[5] = c[5] * 2.8013999999999999e+01 * CWinv;
+}
+
+// get specific heat at constant volume as a function
+// of T for all species (molar units)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCVML(const amrex::Real T, amrex::Real cvml[])
+{
+  cv_R(cvml, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    cvml[id] *= 8.31446261815324e+07;
+  }
+}
+
+// get specific heat at constant pressure as a
+// function of T for all species (molar units)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCPML(const amrex::Real T, amrex::Real cpml[])
+{
+  cp_R(cpml, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    cpml[id] *= 8.31446261815324e+07;
+  }
+}
+
+// get internal energy as a function
+// of T for all species (molar units)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKUML(const amrex::Real T, amrex::Real uml[])
+{
+  amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+  speciesInternalEnergy(uml, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    uml[id] *= RT;
+  }
+}
+
+// get enthalpy as a function
+// of T for all species (molar units)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKHML(const amrex::Real T, amrex::Real hml[])
+{
+  amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+  speciesEnthalpy(hml, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    hml[id] *= RT;
+  }
+}
+
+// Returns the standard-state entropies in molar units
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKSML(const amrex::Real T, amrex::Real sml[])
+{
+  speciesEntropy(sml, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    sml[id] *= 8.31446261815324e+07;
+  }
+}
+
+// Returns the specific heats at constant volume
+// in mass units (Eq. 29)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCVMS(const amrex::Real T, amrex::Real cvms[])
+{
+  cv_R(cvms, T);
+  // multiply by R/molecularweight
+  cvms[0] *= 8.297452839831585e+05; // NC7H16
+  cvms[1] *= 8.297452839831585e+05; // NC7H16_1
+  cvms[2] *= 5.843486090095469e+05; // NC10H22
+  cvms[3] *= 5.843486090095469e+05; // NC10H22_1
+  cvms[4] *= 2.598431970171023e+06; // O2
+  cvms[5] *= 2.967966951578939e+06; // N2
+}
+
+// Returns the specific heats at constant pressure
+// in mass units (Eq. 26)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCPMS(const amrex::Real T, amrex::Real cpms[])
+{
+  cp_R(cpms, T);
+  // multiply by R/molecularweight
+  cpms[0] *= 8.297452839831585e+05; // NC7H16
+  cpms[1] *= 8.297452839831585e+05; // NC7H16_1
+  cpms[2] *= 5.843486090095469e+05; // NC10H22
+  cpms[3] *= 5.843486090095469e+05; // NC10H22_1
+  cpms[4] *= 2.598431970171023e+06; // O2
+  cpms[5] *= 2.967966951578939e+06; // N2
+}
+
+// Returns internal energy in mass units (Eq 30.)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKUMS(const amrex::Real T, amrex::Real ums[])
+{
+  amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+
+  speciesInternalEnergy(ums, T);
+
+  for (int i = 0; i < 6; i++) {
+    ums[i] *= RT * imw(i);
+  }
+}
+
+// Returns enthalpy in mass units (Eq 27.)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKHMS(const amrex::Real T, amrex::Real hms[])
+{
+  amrex::Real RT = 8.31446261815324e+07 * T; // R*T
+
+  speciesEnthalpy(hms, T);
+
+  for (int i = 0; i < 6; i++) {
+    hms[i] *= RT * imw(i);
+  }
+}
+
+// Returns the entropies in mass units (Eq 28.)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKSMS(const amrex::Real T, amrex::Real sms[])
+{
+  speciesEntropy(sms, T);
+  // multiply by R/molecularweight
+  sms[0] *= 8.297452839831585e+05; // NC7H16
+  sms[1] *= 8.297452839831585e+05; // NC7H16_1
+  sms[2] *= 5.843486090095469e+05; // NC10H22
+  sms[3] *= 5.843486090095469e+05; // NC10H22_1
+  sms[4] *= 2.598431970171023e+06; // O2
+  sms[5] *= 2.967966951578939e+06; // N2
+}
+
+// GPU version of productionRate: no more use of thermo namespace vectors
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+comp_qfqr(
+  amrex::Real* /*qf*/,
+  amrex::Real* /*qr*/,
+  const amrex::Real* /*sc*/,
+  const amrex::Real* /*sc_qss*/,
+  const amrex::Real /*T*/,
+  const amrex::Real /*invT*/,
+  const amrex::Real /*logT*/)
+{
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+productionRate(
+  amrex::Real* wdot, const amrex::Real* /*sc*/, const amrex::Real /*T*/)
+{
+
+  for (int i = 0; i < 6; ++i) {
+    wdot[i] = 0.0;
+  }
+}
+
+// compute the production rate for each species
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKWC(const amrex::Real T, amrex::Real C[], amrex::Real wdot[])
+{
+
+  // convert to SI
+  for (int id = 0; id < 6; ++id) {
+    C[id] *= 1.0e6;
+  }
+
+  // convert to chemkin units
+  productionRate(wdot, C, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    C[id] *= 1.0e-6;
+    wdot[id] *= 1.0e-6;
+  }
+}
+
+// Returns the molar production rate of species
+// Given P, T, and mass fractions
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKWYP(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real y[],
+  amrex::Real wdot[])
+{
+  amrex::Real c[6]; // temporary storage
+  amrex::Real YOW = 0;
+  amrex::Real PWORT;
+
+  // Compute inverse of mean molecular wt first
+  for (int i = 0; i < 6; i++) {
+    YOW += y[i] * imw(i);
+  }
+  // PW/RT (see Eq. 7)
+  PWORT = P / (YOW * 8.31446261815324e+07 * T);
+  // multiply by 1e6 so c goes to SI
+  PWORT *= 1e6;
+  // Now compute conversion (and go to SI)
+  for (int i = 0; i < 6; i++) {
+    c[i] = PWORT * y[i] * imw(i);
+  }
+
+  // convert to chemkin units
+  productionRate(wdot, c, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    wdot[id] *= 1.0e-6;
+  }
+}
+
+// Returns the molar production rate of species
+// Given P, T, and mole fractions
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKWXP(
+  const amrex::Real P,
+  const amrex::Real T,
+  const amrex::Real x[],
+  amrex::Real wdot[])
+{
+  amrex::Real c[6]; // temporary storage
+  amrex::Real PORT =
+    1e6 * P / (8.31446261815324e+07 * T); // 1e6 * P/RT so c goes to SI units
+
+  // Compute conversion, see Eq 10
+  for (int id = 0; id < 6; ++id) {
+    c[id] = x[id] * PORT;
+  }
+
+  // convert to chemkin units
+  productionRate(wdot, c, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    wdot[id] *= 1.0e-6;
+  }
+}
+
+// Returns the molar production rate of species
+// Given rho, T, and mass fractions
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKWYR(
+  const amrex::Real rho,
+  const amrex::Real T,
+  const amrex::Real y[],
+  amrex::Real wdot[])
+{
+  amrex::Real c[6]; // temporary storage
+
+  // See Eq 8 with an extra 1e6 so c goes to SI
+  for (int i = 0; i < 6; i++) {
+    c[i] = 1e6 * rho * y[i] * imw(i);
+  }
+
+  // call productionRate
+  productionRate(wdot, c, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    wdot[id] *= 1.0e-6;
+  }
+}
+
+// Returns the molar production rate of species
+// Given rho, T, and mole fractions
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKWXR(
+  const amrex::Real rho,
+  const amrex::Real T,
+  const amrex::Real x[],
+  amrex::Real wdot[])
+{
+  amrex::Real c[6];   // temporary storage
+  amrex::Real XW = 0; // See Eq 4, 11 in CK Manual
+  amrex::Real ROW;
+  // Compute mean molecular wt first
+  XW += x[0] * 1.0020500000000000e+02; // NC7H16
+  XW += x[1] * 1.0020500000000000e+02; // NC7H16_1
+  XW += x[2] * 1.4228600000000000e+02; // NC10H22
+  XW += x[3] * 1.4228600000000000e+02; // NC10H22_1
+  XW += x[4] * 3.1998000000000001e+01; // O2
+  XW += x[5] * 2.8013999999999999e+01; // N2
+  // Extra 1e6 factor to take c to SI
+  ROW = 1e6 * rho / XW;
+
+  // Compute conversion, see Eq 11
+  for (int id = 0; id < 6; ++id) {
+    c[id] = x[id] * ROW;
+  }
+
+  // convert to chemkin units
+  productionRate(wdot, c, T);
+
+  // convert to chemkin units
+  for (int id = 0; id < 6; ++id) {
+    wdot[id] *= 1.0e-6;
+  }
+}
+
+//  species unit charge number
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCHRG(int kcharge[])
+{
+  kcharge[0] = 0; // NC7H16
+  kcharge[1] = 0; // NC7H16_1
+  kcharge[2] = 0; // NC10H22
+  kcharge[3] = 0; // NC10H22_1
+  kcharge[4] = 0; // O2
+  kcharge[5] = 0; // N2
+}
+
+//  species charge per unit mass
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+CKCHRGMASS(amrex::Real zk[])
+{
+
+  int kchrg[6];
+  CKCHRG(kchrg);
+
+  for (int id = 0; id < 6; ++id) {
+    zk[id] = 6.02214076e+23 * 1.60217663e-19 * kchrg[id] * imw(id);
+  }
+}
+
+// compute an approx to the reaction Jacobian
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+aJacobian_precond(
+  amrex::Real* J,
+  const amrex::Real* /*sc*/,
+  const amrex::Real /*T*/,
+  const int /*HP*/)
+{
+
+#if defined(PELE_COMPILE_AJACOBIAN) || !defined(AMREX_USE_HIP)
+  for (int i = 0; i < 49; i++) {
+    J[i] = 0.0;
+  }
+#else
+  amrex::Abort();
+#endif
+}
+
+// compute an approx to the reaction Jacobian (for preconditioning)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+DWDOT_SIMPLIFIED(
+  amrex::Real* J, const amrex::Real* sc, const amrex::Real* Tp, const int* HP)
+{
+  amrex::Real c[6];
+
+  for (int k = 0; k < 6; k++) {
+    c[k] = 1.e6 * sc[k];
+  }
+
+  aJacobian_precond(J, c, *Tp, *HP);
+
+  // dwdot[k]/dT
+  // dTdot/d[X]
+  for (int k = 0; k < 6; k++) {
+    J[42 + k] *= 1.e-6;
+    J[k * 7 + 6] *= 1.e6;
+  }
+}
+
+// compute the reaction Jacobian
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+aJacobian(
+  amrex::Real* J,
+  const amrex::Real* /*sc*/,
+  const amrex::Real /*T*/,
+  const int /*consP*/)
+{
+
+#if defined(PELE_COMPILE_AJACOBIAN) || !defined(AMREX_USE_HIP)
+  for (int i = 0; i < 49; i++) {
+    J[i] = 0.0;
+  }
+#else
+  amrex::Abort();
+#endif
+}
+
+// compute the reaction Jacobian
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+DWDOT(
+  amrex::Real* J,
+  const amrex::Real* sc,
+  const amrex::Real* Tp,
+  const int* consP)
+{
+  amrex::Real c[6];
+
+  for (int k = 0; k < 6; k++) {
+    c[k] = 1.e6 * sc[k];
+  }
+
+  aJacobian(J, c, *Tp, *consP);
+
+  // dwdot[k]/dT
+  // dTdot/d[X]
+  for (int k = 0; k < 6; k++) {
+    J[42 + k] *= 1.e-6;
+    J[k * 7 + 6] *= 1.e6;
+  }
+}
+
+// Transport function declarations
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetLENIMC(int* LENIMC)
+{
+  *LENIMC = 24;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetLENRMC(int* LENRMC)
+{
+  *LENRMC = 846;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetNO(int* NO)
+{
+  *NO = 4;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetKK(int* KK)
+{
+  *KK = 6;
+}
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetNLITE(int* NLITE)
+{
+  *NLITE = 0;
+}
+
+// Patm in ergs/cm3
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetPATM(amrex::Real* PATM)
+{
+  *PATM = 0.1013250000000000E+07;
+}
+
+// the molecular weights in g/mol
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetWT(amrex::Real* WT)
+{
+  WT[0] = 1.00205000E+02;
+  WT[1] = 1.00205000E+02;
+  WT[2] = 1.42286000E+02;
+  WT[3] = 1.42286000E+02;
+  WT[4] = 3.19980000E+01;
+  WT[5] = 2.80140000E+01;
+}
+
+// the lennard-jones potential well depth eps/kb in K
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetEPS(amrex::Real* EPS)
+{
+  EPS[0] = 4.59600000E+02;
+  EPS[1] = 4.59600000E+02;
+  EPS[2] = 7.04917000E+02;
+  EPS[3] = 7.04917000E+02;
+  EPS[4] = 1.07400000E+02;
+  EPS[5] = 9.75300000E+01;
+}
+
+// the lennard-jones collision diameter in Angstroms
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetSIG(amrex::Real* SIG)
+{
+  SIG[0] = 6.25300000E+00;
+  SIG[1] = 6.25300000E+00;
+  SIG[2] = 6.67500000E+00;
+  SIG[3] = 6.67500000E+00;
+  SIG[4] = 3.45800000E+00;
+  SIG[5] = 3.62100000E+00;
+}
+
+// the dipole moment in Debye
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetDIP(amrex::Real* DIP)
+{
+  DIP[0] = 0.00000000E+00;
+  DIP[1] = 0.00000000E+00;
+  DIP[2] = 0.00000000E+00;
+  DIP[3] = 0.00000000E+00;
+  DIP[4] = 0.00000000E+00;
+  DIP[5] = 0.00000000E+00;
+}
+
+// the polarizability in cubic Angstroms
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetPOL(amrex::Real* POL)
+{
+  POL[0] = 0.00000000E+00;
+  POL[1] = 0.00000000E+00;
+  POL[2] = 0.00000000E+00;
+  POL[3] = 0.00000000E+00;
+  POL[4] = 1.60000000E+00;
+  POL[5] = 1.76000000E+00;
+}
+
+// the rotational relaxation collision number at 298 K
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetZROT(amrex::Real* ZROT)
+{
+  ZROT[0] = 1.00000000E+00;
+  ZROT[1] = 1.00000000E+00;
+  ZROT[2] = 1.00000000E+00;
+  ZROT[3] = 1.00000000E+00;
+  ZROT[4] = 3.80000000E+00;
+  ZROT[5] = 4.00000000E+00;
+}
+
+// 0: monoatomic, 1: linear, 2: nonlinear
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetNLIN(int* NLIN)
+{
+  NLIN[0] = 2;
+  NLIN[1] = 2;
+  NLIN[2] = 2;
+  NLIN[3] = 2;
+  NLIN[4] = 1;
+  NLIN[5] = 1;
+}
+
+// Poly fits for the viscosities, dim NO*KK
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetCOFETA(amrex::Real* COFETA)
+{
+  COFETA[0] = -2.29712799E+01;
+  COFETA[1] = 3.90755399E+00;
+  COFETA[2] = -3.46688941E-01;
+  COFETA[3] = 1.19697999E-02;
+  COFETA[4] = -2.29712799E+01;
+  COFETA[5] = 3.90755399E+00;
+  COFETA[6] = -3.46688941E-01;
+  COFETA[7] = 1.19697999E-02;
+  COFETA[8] = -1.29489876E+01;
+  COFETA[9] = -6.04647944E-01;
+  COFETA[10] = 3.07320970E-01;
+  COFETA[11] = -1.89227139E-02;
+  COFETA[12] = -1.29489876E+01;
+  COFETA[13] = -6.04647944E-01;
+  COFETA[14] = 3.07320970E-01;
+  COFETA[15] = -1.89227139E-02;
+  COFETA[16] = -1.68118998E+01;
+  COFETA[17] = 2.52362554E+00;
+  COFETA[18] = -2.49309128E-01;
+  COFETA[19] = 1.10211025E-02;
+  COFETA[20] = -1.62526676E+01;
+  COFETA[21] = 2.24839597E+00;
+  COFETA[22] = -2.13428438E-01;
+  COFETA[23] = 9.46192413E-03;
+}
+
+// Poly fits for the conductivities, dim NO*KK
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetCOFLAM(amrex::Real* COFLAM)
+{
+  COFLAM[0] = -1.96434201E+01;
+  COFLAM[1] = 8.03403931E+00;
+  COFLAM[2] = -7.01574664E-01;
+  COFLAM[3] = 2.05526114E-02;
+  COFLAM[4] = -1.96434201E+01;
+  COFLAM[5] = 8.03403931E+00;
+  COFLAM[6] = -7.01574664E-01;
+  COFLAM[7] = 2.05526114E-02;
+  COFLAM[8] = -1.38317175E+01;
+  COFLAM[9] = 5.32397212E+00;
+  COFLAM[10] = -3.02248860E-01;
+  COFLAM[11] = 1.51838700E-03;
+  COFLAM[12] = -1.38317175E+01;
+  COFLAM[13] = 5.32397212E+00;
+  COFLAM[14] = -3.02248860E-01;
+  COFLAM[15] = 1.51838700E-03;
+  COFLAM[16] = -3.01283106E+00;
+  COFLAM[17] = 3.37554996E+00;
+  COFLAM[18] = -3.43353130E-01;
+  COFLAM[19] = 1.51043449E-02;
+  COFLAM[20] = 1.15506870E+01;
+  COFLAM[21] = -2.91452034E+00;
+  COFLAM[22] = 5.55043078E-01;
+  COFLAM[23] = -2.75172223E-02;
+}
+
+// Poly fits for the diffusion coefficients, dim NO*KK*KK
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetCOFD(amrex::Real* COFD)
+{
+  COFD[0] = -2.24581406E+01;
+  COFD[1] = 4.79347331E+00;
+  COFD[2] = -3.40860948E-01;
+  COFD[3] = 1.21800530E-02;
+  COFD[4] = -2.24581406E+01;
+  COFD[5] = 4.79347331E+00;
+  COFD[6] = -3.40860948E-01;
+  COFD[7] = 1.21800530E-02;
+  COFD[8] = -2.24581406E+01;
+  COFD[9] = 4.79347331E+00;
+  COFD[10] = -3.40860948E-01;
+  COFD[11] = 1.21800530E-02;
+  COFD[12] = -2.01080776E+01;
+  COFD[13] = 3.57754981E+00;
+  COFD[14] = -1.56910225E-01;
+  COFD[15] = 3.22829712E-03;
+  COFD[16] = -2.01080776E+01;
+  COFD[17] = 3.57754981E+00;
+  COFD[18] = -1.56910225E-01;
+  COFD[19] = 3.22829712E-03;
+  COFD[20] = -1.65247183E+01;
+  COFD[21] = 1.86376261E+00;
+  COFD[22] = 9.20701178E-02;
+  COFD[23] = -8.51470516E-03;
+  COFD[24] = -2.01080776E+01;
+  COFD[25] = 3.57754981E+00;
+  COFD[26] = -1.56910225E-01;
+  COFD[27] = 3.22829712E-03;
+  COFD[28] = -2.01080776E+01;
+  COFD[29] = 3.57754981E+00;
+  COFD[30] = -1.56910225E-01;
+  COFD[31] = 3.22829712E-03;
+  COFD[32] = -1.65247183E+01;
+  COFD[33] = 1.86376261E+00;
+  COFD[34] = 9.20701178E-02;
+  COFD[35] = -8.51470516E-03;
+  COFD[36] = -1.65247183E+01;
+  COFD[37] = 1.86376261E+00;
+  COFD[38] = 9.20701178E-02;
+  COFD[39] = -8.51470516E-03;
+  COFD[40] = -2.11294239E+01;
+  COFD[41] = 5.13172698E+00;
+  COFD[42] = -4.39502623E-01;
+  COFD[43] = 1.85691915E-02;
+  COFD[44] = -2.11294239E+01;
+  COFD[45] = 5.13172698E+00;
+  COFD[46] = -4.39502623E-01;
+  COFD[47] = 1.85691915E-02;
+  COFD[48] = -2.24759923E+01;
+  COFD[49] = 5.50822096E+00;
+  COFD[50] = -4.78234659E-01;
+  COFD[51] = 1.98512785E-02;
+  COFD[52] = -2.24759923E+01;
+  COFD[53] = 5.50822096E+00;
+  COFD[54] = -4.78234659E-01;
+  COFD[55] = 1.98512785E-02;
+  COFD[56] = -1.53110597E+01;
+  COFD[57] = 3.37317428E+00;
+  COFD[58] = -2.24900439E-01;
+  COFD[59] = 9.81228151E-03;
+  COFD[60] = -2.07461896E+01;
+  COFD[61] = 5.00611298E+00;
+  COFD[62] = -4.24772056E-01;
+  COFD[63] = 1.79921460E-02;
+  COFD[64] = -2.07461896E+01;
+  COFD[65] = 5.00611298E+00;
+  COFD[66] = -4.24772056E-01;
+  COFD[67] = 1.79921460E-02;
+  COFD[68] = -2.21643795E+01;
+  COFD[69] = 5.41977231E+00;
+  COFD[70] = -4.69168499E-01;
+  COFD[71] = 1.95518107E-02;
+  COFD[72] = -2.21643795E+01;
+  COFD[73] = 5.41977231E+00;
+  COFD[74] = -4.69168499E-01;
+  COFD[75] = 1.95518107E-02;
+  COFD[76] = -1.50096252E+01;
+  COFD[77] = 3.25515933E+00;
+  COFD[78] = -2.09710110E-01;
+  COFD[79] = 9.15941830E-03;
+  COFD[80] = -1.47639411E+01;
+  COFD[81] = 3.15955654E+00;
+  COFD[82] = -1.97590757E-01;
+  COFD[83] = 8.64692156E-03;
+}
+
+// List of specs with small weight, dim NLITE
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetKTDIF(int* /*KTDIF*/)
+{
+}
+
+// Poly fits for thermal diff ratios, dim NO*NLITE*KK
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+egtransetCOFTD(amrex::Real* /*COFTD*/)
+{
+}
+
+// compute the critical parameters for each species
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+GET_CRITPARAMS(
+  amrex::Real* Tci, amrex::Real* ai, amrex::Real* bi, amrex::Real* acentric_i)
+{
+
+  amrex::Real EPS[6];
+  amrex::Real SIG[6];
+  amrex::Real wt[6];
+  amrex::Real Rcst = 83.144598; // in bar [CGS] !
+  amrex::Real avogadro = 6.02214199e23;
+  amrex::Real boltzmann = 1.3806503e-16; // we work in CGS
+
+  egtransetEPS(EPS);
+  egtransetSIG(SIG);
+  get_mw(wt);
+
+  // species 0: NC7H16
+  Tci[0] = 1.316 * EPS[0];
+  ai[0] = (5.55 * avogadro * avogadro * EPS[0] * boltzmann * 1e-24 * SIG[0] *
+           SIG[0] * SIG[0]) /
+          (wt[0] * wt[0]);
+  bi[0] = 0.855 * avogadro * 1e-24 * SIG[0] * SIG[0] * SIG[0] / (wt[0]);
+  acentric_i[0] = 0.0;
+
+  // species 1: NC7H16_1
+  Tci[1] = 1.316 * EPS[1];
+  ai[1] = (5.55 * avogadro * avogadro * EPS[1] * boltzmann * 1e-24 * SIG[1] *
+           SIG[1] * SIG[1]) /
+          (wt[1] * wt[1]);
+  bi[1] = 0.855 * avogadro * 1e-24 * SIG[1] * SIG[1] * SIG[1] / (wt[1]);
+  acentric_i[1] = 0.0;
+
+  // species 2: NC10H22
+  Tci[2] = 1.316 * EPS[2];
+  ai[2] = (5.55 * avogadro * avogadro * EPS[2] * boltzmann * 1e-24 * SIG[2] *
+           SIG[2] * SIG[2]) /
+          (wt[2] * wt[2]);
+  bi[2] = 0.855 * avogadro * 1e-24 * SIG[2] * SIG[2] * SIG[2] / (wt[2]);
+  acentric_i[2] = 0.0;
+
+  // species 3: NC10H22_1
+  Tci[3] = 1.316 * EPS[3];
+  ai[3] = (5.55 * avogadro * avogadro * EPS[3] * boltzmann * 1e-24 * SIG[3] *
+           SIG[3] * SIG[3]) /
+          (wt[3] * wt[3]);
+  bi[3] = 0.855 * avogadro * 1e-24 * SIG[3] * SIG[3] * SIG[3] / (wt[3]);
+  acentric_i[3] = 0.0;
+
+  // species 4: O2
+  // Imported from NIST
+  Tci[4] = 154.581000;
+  ai[4] = 1e6 * 0.42748 * Rcst * Rcst * Tci[4] * Tci[4] /
+          (31.998800 * 31.998800 * 50.430466);
+  bi[4] = 0.08664 * Rcst * Tci[4] / (31.998800 * 50.430466);
+  acentric_i[4] = 0.022200;
+
+  // species 5: N2
+  // Imported from NIST
+  Tci[5] = 126.192000;
+  ai[5] = 1e6 * 0.42748 * Rcst * Rcst * Tci[5] * Tci[5] /
+          (28.013400 * 28.013400 * 33.958000);
+  bi[5] = 0.08664 * Rcst * Tci[5] / (28.013400 * 33.958000);
+  acentric_i[5] = 0.037200;
+}
+
+// compute the critical parameter quantities for each species for SRK
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+GET_CRITPARAMS_SRK(
+  amrex::Real* sqrtOneOverTc,
+  amrex::Real* sqrtAsti,
+  amrex::Real* Bi,
+  amrex::Real* Fomega)
+{
+
+  // species 0: NC7H16
+  // Computed from Lennard-Jones
+  sqrtOneOverTc[0] = 4.0661373572610e-02;
+  sqrtAsti[0] = 5.5766397379575e+04;
+  Bi[0] = 1.2562989577857e+00;
+  Fomega[0] = 4.8508000000000e-01;
+
+  // species 1: NC7H16_1
+  // Computed from Lennard-Jones
+  sqrtOneOverTc[1] = 4.0661373572610e-02;
+  sqrtAsti[1] = 5.5766397379575e+04;
+  Bi[1] = 1.2562989577857e+00;
+  Fomega[1] = 4.8508000000000e-01;
+
+  // species 2: NC10H22
+  // Computed from Lennard-Jones
+  sqrtOneOverTc[2] = 3.2832432738125e-02;
+  sqrtAsti[2] = 5.3644234851217e+04;
+  Bi[2] = 1.0762390490260e+00;
+  Fomega[2] = 4.8508000000000e-01;
+
+  // species 3: NC10H22_1
+  // Computed from Lennard-Jones
+  sqrtOneOverTc[3] = 3.2832432738125e-02;
+  sqrtAsti[3] = 5.3644234851217e+04;
+  Bi[3] = 1.0762390490260e+00;
+  Fomega[3] = 4.8508000000000e-01;
+
+  // species 4: O2
+  // Imported from NIST
+  sqrtOneOverTc[4] = 8.0430717653241e-02;
+  sqrtAsti[4] = 3.6980081924740e+04;
+  Bi[4] = 6.9005216444999e-01;
+  Fomega[4] = 5.1945301904908e-01;
+
+  // species 5: N2
+  // Imported from NIST
+  sqrtOneOverTc[5] = 8.9019282240563e-02;
+  sqrtAsti[5] = 4.2022983929562e+04;
+  Bi[5] = 9.5560052221563e-01;
+  Fomega[5] = 5.4259343186608e-01;
+}
+
+// gauss-jordan solver external routine
+// Replace this routine with the one generated by the Gauss Jordan solver of DW
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+sgjsolve(amrex::Real* /*A*/, amrex::Real* /*x*/, amrex::Real* /*b*/)
+{
+  amrex::Abort("sgjsolve not implemented, choose a different solver ");
+}
+
+// Replace this routine with the one generated by the Gauss Jordan solver of DW
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+sgjsolve_simplified(amrex::Real* /*A*/, amrex::Real* /*x*/, amrex::Real* /*b*/)
+{
+  amrex::Abort(
+    "sgjsolve_simplified not implemented, choose a different solver ");
+}
+
+#endif

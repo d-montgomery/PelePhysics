@@ -1,0 +1,62 @@
+# -----------------------------------------------------------------------------
+# Liquid fuel properties for MP in Pele
+# Fuel: heptane-decane
+# Number of compounds: 6
+# Generated: 2025-10-08 07:57:53
+# FuelLib remote URL: https://github.com/NREL/FuelLib.git
+# Git commit: 6407adfbd454a12b3c58ac8087c745b3b378a2d8
+# Units: MKS
+# -----------------------------------------------------------------------------
+
+particles.fuel_species = NC7H16 NC10H22 NC7H16_1 NC7H16_2 NC10H22_1 NC10H22_2
+particles.Y_0 = 0.2375 0.0875 0.25 0.25 0.0875 0.0875
+particles.dep_fuel_species = NC7H16 NC10H22 NC7H16 NC7H16 NC10H22 NC10H22
+particles.fuel_ref_temp = 298.15 # K
+
+# Properties for NC7H16 in MKS
+particles.NC7H16_crit_temp = 549.855981 # K
+particles.NC7H16_boil_temp = 379.073212 # K
+particles.NC7H16_latent = 383110.000000 # J/kg
+particles.NC7H16_cp = 1636.255000 # J/kg/K
+particles.NC7H16_rho = 683.355277 # kg/m^3
+particles.NC7H16_psat = 9.164494003553495 1351.7047382583683 -51.09464332705347 1.0 # Pa
+
+# Properties for NC10H22 in MKS
+particles.NC10H22_crit_temp = 623.690516 # K
+particles.NC10H22_boil_temp = 452.596977 # K
+particles.NC10H22_latent = 368035.211268 # J/kg
+particles.NC10H22_cp = 1630.488028 # J/kg/K
+particles.NC10H22_rho = 726.195341 # kg/m^3
+particles.NC10H22_psat = 9.380101480953762 1702.1569482843086 -60.077478697798085 1.0 # Pa
+
+# Properties for NC7H16_1 in MKS
+particles.NC7H16_1_crit_temp = 549.855981 # K
+particles.NC7H16_1_boil_temp = 379.073212 # K
+particles.NC7H16_1_latent = 383110.000000 # J/kg
+particles.NC7H16_1_cp = 1636.255000 # J/kg/K
+particles.NC7H16_1_rho = 683.355277 # kg/m^3
+particles.NC7H16_1_psat = 9.164494003553495 1351.7047382583683 -51.09464332705347 1.0 # Pa
+
+# Properties for NC7H16_2 in MKS
+particles.NC7H16_2_crit_temp = 549.855981 # K
+particles.NC7H16_2_boil_temp = 379.073212 # K
+particles.NC7H16_2_latent = 383110.000000 # J/kg
+particles.NC7H16_2_cp = 1636.255000 # J/kg/K
+particles.NC7H16_2_rho = 683.355277 # kg/m^3
+particles.NC7H16_2_psat = 9.164494003553495 1351.7047382583683 -51.09464332705347 1.0 # Pa
+
+# Properties for NC10H22_1 in MKS
+particles.NC10H22_1_crit_temp = 623.690516 # K
+particles.NC10H22_1_boil_temp = 452.596977 # K
+particles.NC10H22_1_latent = 368035.211268 # J/kg
+particles.NC10H22_1_cp = 1630.488028 # J/kg/K
+particles.NC10H22_1_rho = 726.195341 # kg/m^3
+particles.NC10H22_1_psat = 9.380101480953762 1702.1569482843086 -60.077478697798085 1.0 # Pa
+
+# Properties for NC10H22_2 in MKS
+particles.NC10H22_2_crit_temp = 623.690516 # K
+particles.NC10H22_2_boil_temp = 452.596977 # K
+particles.NC10H22_2_latent = 368035.211268 # J/kg
+particles.NC10H22_2_cp = 1630.488028 # J/kg/K
+particles.NC10H22_2_rho = 726.195341 # kg/m^3
+particles.NC10H22_2_psat = 9.380101480953762 1702.1569482843086 -60.077478697798085 1.0 # Pa
