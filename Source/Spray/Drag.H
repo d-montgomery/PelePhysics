@@ -82,7 +82,8 @@ struct calcVaporState
 
     // Estimate X_{v,n} from the liquid state
     int myrank = amrex::ParallelDescriptor::MyProc();
-    amrex::Print(myrank) << myrank << ": Vapor Mole Fractions (spray-species):\n";
+    amrex::Print(myrank) << myrank
+                         << ": Vapor Mole Fractions (spray-species):\n";
     amrex::Real mbar_vap = 0.; // Average molar mass of evaporated fuel in vapor
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fdspec = fdat.dep_indx[spf];
@@ -116,7 +117,8 @@ struct calcVaporState
       } else {
         X_vn[spf] = 0.;
       }
-      amrex::Print(myrank) << myrank << ":    X_vn[" << spf << "] = " << X_vn[spf] << "\n";
+      amrex::Print(myrank) << myrank << ":    X_vn[" << spf
+                           << "] = " << X_vn[spf] << "\n";
     }
 
     // Collapse vapor state X_{v,n} on to dependent gas species X_{v,i}
@@ -126,7 +128,8 @@ struct calcVaporState
       const int pcspec = fdat.pc_indx[pc];
       X_vi[pcspec] =
         fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, X_vn);
-      amrex::Print(myrank) << myrank << ":    X_vi[" << pcspec << "] = " << X_vi[pcspec] << "\n";
+      amrex::Print(myrank) << myrank << ":    X_vi[" << pcspec
+                           << "] = " << X_vi[pcspec] << "\n";
     }
 
     // Mass fractions in vapor state
@@ -141,8 +144,8 @@ struct calcVaporState
       const int pcspec = fdat.pc_indx[pc];
       if (X_vi[pcspec] > 0.) {
         Y_vi[pcspec] = X_vi[pcspec] * gpv.mw[pcspec] / totalmwx;
-        amrex::Print(myrank) << myrank << ":    Y_vi[" << pcspec << "] = " << Y_vi[pcspec]
-                       << "\n";
+        amrex::Print(myrank)
+          << myrank << ":    Y_vi[" << pcspec << "] = " << Y_vi[pcspec] << "\n";
         sumYVap += Y_vi[pcspec];
       }
     }
@@ -156,9 +159,10 @@ struct calcVaporState
         const amrex::Real Y_ri = Y_vi[pcspec] + rule * (Y_gi - Y_vi[pcspec]);
         Y_skin[pcspec] = Y_ri;
         sumYSkin += Y_ri;
-        amrex::Print(myrank) << myrank << ":    Y_gi[" << pcspec << "] = " << Y_gi << "\n";
-        amrex::Print(myrank) << myrank << ":    Y_skin[" << pcspec << "] = " << Y_skin[pcspec]
-                       << "\n";
+        amrex::Print(myrank)
+          << myrank << ":    Y_gi[" << pcspec << "] = " << Y_gi << "\n";
+        amrex::Print(myrank) << myrank << ":    Y_skin[" << pcspec
+                             << "] = " << Y_skin[pcspec] << "\n";
       }
     }
 
@@ -491,12 +495,14 @@ calculateSpraySource(
           amrex::Real X_norm = X_vi / sumXVap;
           rhoD_ri[pcspec] *= X_norm;
           amrex::Print(myrank) << myrank << ":    (rhoD)_{r," << pcspec
-                         << "} = " << rhoD_ri[pcspec] << "\n";
+                               << "} = " << rhoD_ri[pcspec] << "\n";
           rhoDtotal += rhoD_ri[pcspec];
           sumYSkin += Y_skin[pcspec];
         }
-        amrex::Print(myrank) << myrank << ":    Total (rhoD)_r = " << rhoDtotal << "\n";
-        amrex::Print(myrank) << myrank << ":    Sum Y_skin = " << sumYSkin << "\n";
+        amrex::Print(myrank)
+          << myrank << ":    Total (rhoD)_r = " << rhoDtotal << "\n";
+        amrex::Print(myrank)
+          << myrank << ":    Sum Y_skin = " << sumYSkin << "\n";
 
 #ifndef USE_MANIFOLD_EOS
         amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_fuel_skin;
@@ -523,9 +529,11 @@ calculateSpraySource(
         amrex::Real mdotcoeff = M_PI * dia_part * Sh_num * logB;
         amrex::Real ratio = cp_fuel * Sh_num * rhoDtotal / lambda_skin;
         amrex::Print(myrank) << myrank << ":    Sh_num = " << Sh_num << "\n";
-        amrex::Print(myrank) << myrank << ":    dia_part = " << dia_part << "\n";
+        amrex::Print(myrank)
+          << myrank << ":    dia_part = " << dia_part << "\n";
         amrex::Print(myrank) << myrank << ":    logB = " << logB << "\n";
-        amrex::Print(myrank) << myrank << ":    mdotcoeff = " << mdotcoeff << "\n";
+        amrex::Print(myrank)
+          << myrank << ":    mdotcoeff = " << mdotcoeff << "\n";
 
         Nu_num = calcHeatCoeff(ratio, B_M, B_eps, C_eps, Nu_0);
 
@@ -541,18 +549,19 @@ calculateSpraySource(
               // Multiple species deposit to fdspec, scale rhoD_{r,n}
               // accordingly
               Xnorm = X_vn[spf] / X_vi;
-              amrex::Print(myrank)
-                << myrank << ":    Scaling rhoD_ri[ " << spf << "] by " << Xnorm << "\n";
+              amrex::Print(myrank) << myrank << ":    Scaling rhoD_ri[ " << spf
+                                   << "] by " << Xnorm << "\n";
             }
             mn_dot[spf] = -amrex::max(Xnorm * rhoD_ri[fdspec] * mdotcoeff, 0.);
             L_n_pc[fdspec] = L_n[spf];
             m_dot += mn_dot[spf];
             sumL += mn_dot[spf] * L_n[spf];
             amrex::Print(myrank) << myrank << ":    rhoD_ri[" << fdspec
-                           << "] = " << rhoD_ri[fdspec] << "\n";
-            amrex::Print(myrank) << myrank << ":    mn_dot[" << spf << "] = " << mn_dot[spf]
-                           << "\n";
-            amrex::Print(myrank) << myrank << ":    L_n[" << spf << "] = " << L_n[spf] << "\n";
+                                 << "] = " << rhoD_ri[fdspec] << "\n";
+            amrex::Print(myrank) << myrank << ":    mn_dot[" << spf
+                                 << "] = " << mn_dot[spf] << "\n";
+            amrex::Print(myrank)
+              << myrank << ":    L_n[" << spf << "] = " << L_n[spf] << "\n";
           }
         }
         amrex::Print(myrank) << myrank << ":    m_dot = " << m_dot << "\n";
@@ -604,8 +613,8 @@ calculateSpraySource(
             amrex::max(
               0., (Y_part[spf] * pmass + mn_dot[spf] * part_dt) / new_mass));
           oldY_part[spf] = p.rdata(SprayComps::pstateY + spf);
-          amrex::Print(myrank) << myrank << ":    Updated Y_part[" << spf << "] = " << Y_part[spf]
-                         << "\n";
+          amrex::Print(myrank) << myrank << ":    Updated Y_part[" << spf
+                               << "] = " << Y_part[spf] << "\n";
           if (Y_part[spf] <= 1.E-12) {
             Y_part[spf] = 0.;
           }
@@ -661,13 +670,16 @@ calculateSpraySource(
       (newY * pmass - oldY_part_pc * startmass) / (fdat.dtmod * flow_dt);
     gpv.fluid_Y_dot[pcspec] = num_ppp * midot;
     amrex::Print(myrank) << myrank << ":    gpv.fluid_Ydot[" << pcspec
-                   << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
-    amrex::Print(myrank) << myrank << ":       newY = " << newY << "\n" << myrank << ":       pmass = " << pmass
-                   << "\n" << myrank << ":       oldY_part = " << oldY_part_pc
-                   << "\n" << myrank << ":       startmass = " << startmass
-                   << "\n" << myrank << ":       dtmod = " << fdat.dtmod
-                   << "\n" << myrank << ":       flow_dt = " << flow_dt
-                   << "\n" << myrank << ":       midot = " << midot << "\n";
+                         << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
+    amrex::Print(myrank) << myrank << ":       newY = " << newY << "\n"
+                         << myrank << ":       pmass = " << pmass << "\n"
+                         << myrank << ":       oldY_part = " << oldY_part_pc
+                         << "\n"
+                         << myrank << ":       startmass = " << startmass
+                         << "\n"
+                         << myrank << ":       dtmod = " << fdat.dtmod << "\n"
+                         << myrank << ":       flow_dt = " << flow_dt << "\n"
+                         << myrank << ":       midot = " << midot << "\n";
 
 #ifdef USE_MANIFOLD_EOS
     gpv.fluid_eng_src = 0.0;
@@ -675,7 +687,8 @@ calculateSpraySource(
     gpv.fluid_eng_src += num_ppp * midot * h_gas[pcspec] * SprayUnits::eng_conv;
 #endif
   }
-  amrex::Print(myrank) << myrank << ": gpv.fluid_eng_src = " << gpv.fluid_eng_src << "\n";
+  amrex::Print(myrank) << myrank
+                       << ": gpv.fluid_eng_src = " << gpv.fluid_eng_src << "\n";
   AMREX_D_TERM(p.rdata(SprayComps::pstateVel) = vel_part[0];
                , p.rdata(SprayComps::pstateVel + 1) = vel_part[1];
                , p.rdata(SprayComps::pstateVel + 2) = vel_part[2];);
