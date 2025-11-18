@@ -5,6 +5,9 @@ using namespace amrex;
 
 std::string SprayParticleContainer::m_sprayFuelNames[SPRAY_FUEL_NUM];
 std::string SprayParticleContainer::m_sprayDepNames[SPRAY_FUEL_NUM];
+#ifdef USE_MANIFOLD_EOS
+std::string SprayParticleContainer::m_sprayManifoldDepNames[SPRAY_FUEL_NUM];
+#endif
 Vector<std::string> SprayParticleContainer::m_sprayDeriveVars;
 SprayData* SprayParticleContainer::m_sprayData = nullptr;
 SprayData* SprayParticleContainer::d_sprayData = nullptr;
@@ -61,6 +64,8 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
 
   std::vector<std::string> fuel_names;
   std::vector<std::string> dep_fuel_names;
+  std::vector<std::string> dep_manifold_names;
+
   pele::physics::SprayProps::InitLiqProps<
     pele::physics::SprayProps::LiqPropType>
     init_liq_props;
@@ -72,6 +77,14 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
       has_dep_spec = true;
       pp.getarr("dep_fuel_species", dep_fuel_names);
     }
+#ifdef USE_MANIFOLD_EOS
+    pp.getarr("dep_manifold_species", dep_manifold_names);
+    if(dep_manifold_names.size() != static_cast<size_t>(SPRAY_FUEL_NUM)) {
+      amrex::Abort(
+        "Error! Number of manifold dependent species must match "
+        "SPRAY_FUEL_NUM");
+    }
+#endif
 
     // Read input parameters for liquid properties
     init_liq_props(&(m_sprayData->liqprops), fuel_names);
@@ -84,6 +97,9 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
       } else {
         m_sprayDepNames[i] = m_sprayFuelNames[i];
       }
+#ifdef USE_MANIFOLD_EOS
+      m_sprayManifoldDepNames[i] = dep_manifold_names[i];
+#endif
     }
   }
 
@@ -318,10 +334,10 @@ SprayParticleContainer::spraySetup(
   // Manifold: For now, we require that each liquid/spray species
   // is cacuable from the Manifold model. We also require that
   // each species contributes to exactly one manifold variable with weight 1
-  // which is specified through the "DepNames"
-  std::set<std::string> unique_dep_names(
-    m_sprayDepNames, m_sprayDepNames + SPRAY_FUEL_NUM);
-  if (unique_dep_names.size() != SPRAY_FUEL_NUM) {
+  // which is specified through the "ManifoldDepNames"
+  std::set<std::string> unique_manifold_dep_names(
+    m_sprayManifoldDepNames, m_sprayManifoldDepNames + SPRAY_FUEL_NUM);
+  if (unique_manifold_dep_names.size() != SPRAY_FUEL_NUM) {
     amrex::Abort(
       "Each liquid spray species must uniquely contribute to one manifold "
       "parameter, as specified through dep_fuel_species");
@@ -334,30 +350,30 @@ SprayParticleContainer::spraySetup(
 
   for (int i = 0; i < SPRAY_FUEL_NUM; ++i) {
     amrex::Print() << "\n SpraySpec = " << m_sprayFuelNames[i] << " "
-                   << " dep species = " << m_sprayDepNames[i];
+                   << " manifold species = " << m_sprayManifoldDepNames[i];
     for (int ns = 0; ns < chemspec_names.size(); ++ns) {
       amrex::Print() << "\n ChemSpec from manifold = " << chemspec_names[ns];
       std::string gas_spec = chemspec_names[ns];
       if (gas_spec == m_sprayFuelNames[i]) {
-        m_sprayData->indx[i] = ns;
+        m_sprayData->dep_indx[i] = ns;
         m_sprayData->mtrx_Li[ns][i] = 1; // TODO: Remvove this after testing
       }
     }
-    if (m_sprayData->indx[i] < 0) {
+    if (m_sprayData->dep_indx[i] < 0) {
       Abort(
         "Fuel " + m_sprayFuelNames[i] +
         " not found in species available in the manifold");
     }
     for (int ns = 0; ns < manivar_names.size(); ++ns) {
       std::string gas_spec = manivar_names[ns];
-      amrex::Print() << "\n Manivar = " << manivar_names[ns];
-      if (gas_spec == m_sprayDepNames[i]) {
-        m_sprayData->dep_indx[i] = ns;
+      amrex::Print() << "\n Manifold var = " << manivar_names[ns];
+      if (gas_spec == m_sprayManifoldDepNames[i]) {
+        m_sprayData->dep_manifold_indx[i] = ns;
       }
     }
-    if (m_sprayData->dep_indx[i] < 0) {
+    if (m_sprayData->dep_manifold_indx[i] < 0) {
       Abort(
-        "dep_fuel_species " + m_sprayDepNames[i] +
+        "dep_fuel_species " + m_sprayManifoldDepNames[i] +
         " not found as a manifold parameter");
     }
   }
@@ -367,7 +383,7 @@ SprayParticleContainer::spraySetup(
   m_sprayData->L_row[0] = 0;
   for (int ns = 0; ns < chemspec_names.size(); ++ns) {
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      if (ns == m_sprayData->indx[spf]) {
+      if (ns == m_sprayData->dep_indx[spf]) {
         m_sprayData->L_col[nnz] = spf;
         ++nnz;
       }
@@ -389,7 +405,7 @@ SprayParticleContainer::spraySetup(
   amrex::Vector<amrex::Real> mw(chemspec_names.size());
   auto eos = pele::physics::PhysicsType::eos(eosparms_h);
   eos.molecular_weight(mw.data());
-  m_sprayData->liqprops.init_mw(mw.data(), m_sprayData->indx.data());
+  m_sprayData->liqprops.init_mw(mw.data(), m_sprayData->dep_indx.data());
 
   // TODO: Handle latent heat for Manifold EOS
 
@@ -398,10 +414,10 @@ SprayParticleContainer::spraySetup(
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     amrex::Print() << "\n  Spray fuel species " << spf << ": "
                    << m_sprayFuelNames[spf] << "\n     mapped to manifold parameter "
-                   << m_sprayData->dep_indx[spf] << ": "
-                   << manivar_names[m_sprayData->dep_indx[spf]]
-                   << "\n     dep_indx[" << spf
-                   << "] = " << m_sprayData->dep_indx[spf];
+                   << m_sprayData->dep_manifold_indx[spf] << ": "
+                   << manivar_names[m_sprayData->dep_manifold_indx[spf]]
+                   << "\n     dep_manifold_indx[" << spf
+                   << "] = " << m_sprayData->dep_manifold_indx[spf];
   }
   amrex::Print() << "\n Mapping matrix L:\n";
   for (int ns = 0; ns < SPRAY_FUEL_NUM; ++ns) {
@@ -431,12 +447,12 @@ SprayParticleContainer::spraySetup(
   
   amrex::Print() << "Indx vs. pc_indx:\n";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << "   " << spf << ": indx[" << spf << "] = "
-                   << m_sprayData->indx[spf] 
+    amrex::Print() << "   " << spf << ": dep_indx[" << spf << "] = "
+                   << m_sprayData->dep_indx[spf] 
                    << "\n   pc_indx["
                    << spf << "] = " << m_sprayData->pc_indx[spf] 
-                   << "\n   dep_indx[" << spf << "] = " 
-                   << m_sprayData->dep_indx[spf]
+                   << "\n   dep_manifold_indx[" << spf << "] = " 
+                   << m_sprayData->dep_manifold_indx[spf]
                    << "\n";
   }
 

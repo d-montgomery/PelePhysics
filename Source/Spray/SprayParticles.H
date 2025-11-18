@@ -365,6 +365,9 @@ public:
 
   static std::string m_sprayFuelNames[SPRAY_FUEL_NUM];
   static std::string m_sprayDepNames[SPRAY_FUEL_NUM];
+#ifdef USE_MANIFOLD_EOS
+  static std::string m_sprayManifoldDepNames[SPRAY_FUEL_NUM];
+#endif
   static amrex::Vector<std::string> m_sprayDeriveVars;
   static amrex::Real m_maxNumPPP;
   // Factor for balancing number of child parcels formed versus child parcel

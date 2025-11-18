@@ -212,7 +212,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
     // Calculate X_{v,n}- the vapour state
 
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      const int fdspec = fdat.dep_indx[spf];
+      const int fmspec = fdat.dep_manifold_indx[spf];
       const amrex::Real mw_li = fdat.liqprops.mw_i(spf);
       amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
 
@@ -225,7 +225,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
       amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
 
       //
-      amrex::Real X_fluid = gpv.Yspec_fluid[fdspec] * gpv.mw_mix / mw_li;
+      amrex::Real X_fluid = gpv.Yspec_fluid[fmspec] * gpv.mw_mix / mw_li;
 
       if (pres_sat > X_fluid * gpv.p_fluid) {
         amrex::Real X_dn = Y_dn[spf] * mw_part / mw_li;
@@ -267,10 +267,11 @@ struct calcVaporState<pele::physics::eos::Manifold>
     // Alternative way of doing above without using W_ij assuming W_ij is some
     // row exchanged form of the identity matrix
 
-    for (int nls = 0; nls < SPRAY_FUEL_NUM; nls++) {
-      if (X_vn[nls] > 0.) {
-        WYgi[fdat.dep_indx[nls]] = gpv.Yspec_fluid[nls];
-        WYri[fdat.dep_indx[nls]] = Y_ri_pc[nls];
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; spf++) {
+      if (X_vn[spf] > 0.) {
+        const int fmspec = fdat.dep_manifold_indx[spf];
+        WYgi[fmspec] = gpv.Yspec_fluid[spf];
+        WYri[fmspec] = Y_ri_pc[spf];
       }
     }
 
@@ -508,8 +509,8 @@ calculateSpraySource(
         amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_fuel_skin;
         Y_fuel_skin.fill(0.0);
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-          Y_fuel_skin[fdat.dep_indx[spf]] =
-            Y_skin[fdat.dep_indx[spf]] / sumYSkin;
+          Y_fuel_skin[fdat.dep_manifold_indx[spf]] =
+            Y_skin[fdat.dep_manifold_indx[spf]] / sumYSkin;
         }
         eos.TY2Cp(T_skin, Y_fuel_skin.data(), cp_fuel);
 #else
@@ -544,7 +545,7 @@ calculateSpraySource(
           const int fdspec = fdat.dep_indx[spf];
 #else
           // TODO: fix this nonsense, need dep_indx to be same for both models
-          const int fdspec = fdat.indx[spf]; 
+          const int fdspec = fdat.dep_indx[spf]; 
 #endif          
           if (X_vn[spf] > 0.) {
             amrex::Real X_vi =
