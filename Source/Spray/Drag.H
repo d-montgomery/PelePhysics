@@ -628,6 +628,7 @@ calculateSpraySource(
         }
         rho_part = fdat.liqprops.rho_mix(Y_part, T_part, cBoilT);
 #else
+        oldY_part[0] = p.rdata(SprayComps::pstateY);
         rho_part = fdat.liqprops.rho_i(amrex::min(T_part, cBoilT[0]), 0);
 #endif
         pmass = new_mass;
