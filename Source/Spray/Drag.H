@@ -425,7 +425,7 @@ calculateSpraySource(
     mu_skin *= sutherland_ratio;
     lambda_skin *= sutherland_ratio;
     for (int spf = 0; spf < NUM_SPECIES; ++spf) {
-      Ddiag[spf] *= sutherland_ratio;
+      rhoD_ri[spf] *= sutherland_ratio;
     }
     rho_skin /= temp_ratio;
 #endif
@@ -556,6 +556,8 @@ calculateSpraySource(
             L_n_pc[fdspec] = L_n[spf];
             m_dot += mn_dot[spf];
             sumL += mn_dot[spf] * L_n[spf];
+            amrex::Print(myrank) << myrank << ":    X_vn[" << spf
+                                 << "] = " << X_vn[spf] <<"\n";
             amrex::Print(myrank) << myrank << ":    rhoD_ri[" << fdspec
                                  << "] = " << rhoD_ri[fdspec] << "\n";
             amrex::Print(myrank) << myrank << ":    mn_dot[" << spf
