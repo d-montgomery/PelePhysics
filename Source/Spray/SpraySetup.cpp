@@ -231,7 +231,7 @@ SprayParticleContainer::spraySetup(
       std::string gas_spec = spec_names[ns];
       if (gas_spec == m_sprayDepNames[spf]) {
         m_sprayData->dep_indx[spf] = ns;
-        m_sprayData->mtrx_Li[ns][spf] = 1; // TODO: Remvove this after testing
+        m_sprayData->mtrx_Li[ns][spf] = 1; // TODO: Remove this after testing
       }
     }
     if (m_sprayData->dep_indx[spf] < 0) {
@@ -356,7 +356,7 @@ SprayParticleContainer::spraySetup(
       std::string gas_spec = chemspec_names[ns];
       if (gas_spec == m_sprayFuelNames[i]) {
         m_sprayData->dep_indx[i] = ns;
-        m_sprayData->mtrx_Li[ns][i] = 1; // TODO: Remvove this after testing
+        m_sprayData->mtrx_Li[ns][i] = 1; // TODO: Remove this after testing
       }
     }
     if (m_sprayData->dep_indx[i] < 0) {
