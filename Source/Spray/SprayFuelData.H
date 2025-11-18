@@ -100,7 +100,8 @@ struct SprayData
 #else
   amrex::GpuArray<int, SPRAY_FUEL_NUM + 1> L_row{};
   amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_manifold_indx{};
-  amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, SPRAY_FUEL_NUM> mtrx_Li{};
+  amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, SPRAY_FUEL_NUM>
+    mtrx_Li{};
 #endif
   int N_pc = 0;
   int* pc_indx = nullptr;

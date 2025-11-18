@@ -541,12 +541,12 @@ calculateSpraySource(
         amrex::GpuArray<amrex::Real, NUM_SPECIES> L_n_pc{};
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           // Species index
-#ifndef USE_MANIFOLD_EOS          
+#ifndef USE_MANIFOLD_EOS
           const int fdspec = fdat.dep_indx[spf];
 #else
           // TODO: fix this nonsense, need dep_indx to be same for both models
-          const int fdspec = fdat.dep_indx[spf]; 
-#endif          
+          const int fdspec = fdat.dep_indx[spf];
+#endif
           if (X_vn[spf] > 0.) {
             amrex::Real X_vi =
               fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_vn);
@@ -562,8 +562,8 @@ calculateSpraySource(
             L_n_pc[fdspec] = L_n[spf];
             m_dot += mn_dot[spf];
             sumL += mn_dot[spf] * L_n[spf];
-            amrex::Print(myrank) << myrank << ":    X_vn[" << spf
-                                 << "] = " << X_vn[spf] <<"\n";
+            amrex::Print(myrank)
+              << myrank << ":    X_vn[" << spf << "] = " << X_vn[spf] << "\n";
             amrex::Print(myrank) << myrank << ":    rhoD_ri[" << fdspec
                                  << "] = " << rhoD_ri[fdspec] << "\n";
             amrex::Print(myrank) << myrank << ":    mn_dot[" << spf

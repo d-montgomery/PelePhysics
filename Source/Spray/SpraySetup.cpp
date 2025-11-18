@@ -79,7 +79,7 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
     }
 #ifdef USE_MANIFOLD_EOS
     pp.getarr("dep_manifold_species", dep_manifold_names);
-    if(dep_manifold_names.size() != static_cast<size_t>(SPRAY_FUEL_NUM)) {
+    if (dep_manifold_names.size() != static_cast<size_t>(SPRAY_FUEL_NUM)) {
       amrex::Abort(
         "Error! Number of manifold dependent species must match "
         "SPRAY_FUEL_NUM");
@@ -413,7 +413,8 @@ SprayParticleContainer::spraySetup(
   amrex::Print() << "\n Spray fuel species mapping to gas phase species: ";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     amrex::Print() << "\n  Spray fuel species " << spf << ": "
-                   << m_sprayFuelNames[spf] << "\n     mapped to manifold parameter "
+                   << m_sprayFuelNames[spf]
+                   << "\n     mapped to manifold parameter "
                    << m_sprayData->dep_manifold_indx[spf] << ": "
                    << manivar_names[m_sprayData->dep_manifold_indx[spf]]
                    << "\n     dep_manifold_indx[" << spf
@@ -444,21 +445,19 @@ SprayParticleContainer::spraySetup(
     amrex::Print() << " pc_indx[" << i << "] = " << pcspec << ": "
                    << chemspec_names[pcspec] << "\n";
   }
-  
+
   amrex::Print() << "Indx vs. pc_indx:\n";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << "   " << spf << ": dep_indx[" << spf << "] = "
-                   << m_sprayData->dep_indx[spf] 
-                   << "\n   pc_indx["
-                   << spf << "] = " << m_sprayData->pc_indx[spf] 
-                   << "\n   dep_manifold_indx[" << spf << "] = " 
-                   << m_sprayData->dep_manifold_indx[spf]
-                   << "\n";
+    amrex::Print() << "   " << spf << ": dep_indx[" << spf
+                   << "] = " << m_sprayData->dep_indx[spf] << "\n   pc_indx["
+                   << spf << "] = " << m_sprayData->pc_indx[spf]
+                   << "\n   dep_manifold_indx[" << spf
+                   << "] = " << m_sprayData->dep_manifold_indx[spf] << "\n";
   }
 
   // END DEBUG PRINT STATEMENTS ------------------------------------------------
 #endif
-  // Stuff for both detailed chem and manifold  
+  // Stuff for both detailed chem and manifold
   for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
     m_sprayData->body_force[dir] = body_force[dir];
   }
