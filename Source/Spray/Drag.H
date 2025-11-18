@@ -509,8 +509,8 @@ calculateSpraySource(
         amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_fuel_skin;
         Y_fuel_skin.fill(0.0);
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-          Y_fuel_skin[fdat.dep_manifold_indx[spf]] =
-            Y_skin[fdat.dep_manifold_indx[spf]] / sumYSkin;
+          Y_fuel_skin[fdat.dep_indx[spf]] =
+            Y_skin[fdat.dep_indx[spf]] / sumYSkin;
         }
         eos.TY2Cp(T_skin, Y_fuel_skin.data(), cp_fuel);
 #else
@@ -541,12 +541,7 @@ calculateSpraySource(
         amrex::GpuArray<amrex::Real, NUM_SPECIES> L_n_pc{};
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           // Species index
-#ifndef USE_MANIFOLD_EOS
           const int fdspec = fdat.dep_indx[spf];
-#else
-          // TODO: fix this nonsense, need dep_indx to be same for both models
-          const int fdspec = fdat.dep_indx[spf];
-#endif
           if (X_vn[spf] > 0.) {
             amrex::Real X_vi =
               fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_vn);

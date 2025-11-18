@@ -93,13 +93,13 @@ struct SprayData
   amrex::Real dtmod = 0.5;
   amrex::RealVect body_force = amrex::RealVect::TheZeroVector();
   amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_indx{};
+  amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_manifold_indx{};
   amrex::GpuArray<int, SPRAY_FUEL_NUM> L_col{};
 #ifndef USE_MANIFOLD_EOS
   amrex::GpuArray<int, NUM_SPECIES + 1> L_row{};
   amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, NUM_SPECIES> mtrx_Li{};
 #else
   amrex::GpuArray<int, SPRAY_FUEL_NUM + 1> L_row{};
-  amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_manifold_indx{};
   amrex::GpuArray<amrex::GpuArray<int, SPRAY_FUEL_NUM>, SPRAY_FUEL_NUM>
     mtrx_Li{};
 #endif
