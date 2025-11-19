@@ -284,7 +284,6 @@ SprayParticleContainer::spraySetup(
   }
   amrex::Print() << "\n Mapping matrix L:\n";
   for (int ns = 0; ns < NUM_SPECIES; ++ns) {
-    std::string gas_spec = spec_names[ns];
     amrex::Print() << "   " << ns << ": ";
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       amrex::Print() << m_sprayData->mtrx_Li[ns][spf] << " ";
