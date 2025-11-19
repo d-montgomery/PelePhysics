@@ -158,7 +158,6 @@ SprayParticleContainer::updateParticles(
     pele::physics::TransportType> const* ltransparm,
   const Real spray_cfl_lev)
 {
-  int myrank = amrex::ParallelDescriptor::MyProc();
   BL_PROFILE("SprayParticleContainer::updateParticles()");
   AMREX_ASSERT(OnSameGrids(level, state));
   AMREX_ASSERT(OnSameGrids(level, source));
@@ -429,39 +428,22 @@ SprayParticleContainer::updateParticles(
                   "too small");
               }
             }
-            amrex::Print(myrank) << "\n" << myrank << ": SprayParticles.cpp\n";
             if (fdat->mom_trans) {
-              amrex::Print(myrank)
-                << myrank << ":    Gpu::Atomic::Add(&momSrcarr)\n";
               for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
                 Gpu::Atomic::Add(
                   &momSrcarr(cur_indx, dir), cur_coef * gpv.fluid_mom_src[dir]);
               }
             }
             if (fdat->mass_trans) {
-              amrex::Print(myrank)
-                << myrank << ":    Gpu::Atomic::Add(&rhoSrcarr)\n";
-              amrex::Print(myrank)
-                << myrank << ":       N_pc = " << fdat->N_pc << "\n";
               Gpu::Atomic::Add(
                 &rhoSrcarr(cur_indx), cur_coef * gpv.fluid_mass_src);
               for (int pc = 0; pc < fdat->N_pc; ++pc) {
                 const int pcspec = fdat->pc_indx[pc];
-                amrex::Print(myrank) << myrank << ":       pc = " << pc
-                                     << ", pcspec = " << pcspec << "\n";
-                amrex::Print(myrank)
-                  << myrank << ":       gpv.fluid_Y_dot[" << pcspec
-                  << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
                 Gpu::Atomic::Add(
                   &rhoYSrcarr(cur_indx, pc),
                   cur_coef * gpv.fluid_Y_dot[pcspec]);
-                amrex::Print(myrank)
-                  << myrank << ":       added gpv.fluid_Y_dot[" << pcspec
-                  << "] \n";
               }
             }
-            amrex::Print(myrank)
-              << myrank << ":    Gpu::Atomic::Add(&engSrcarr)\n";
             Gpu::Atomic::Add(
               &engSrcarr(cur_indx), cur_coef * gpv.fluid_eng_src);
             // Real new_time = static_cast<Real>(cur_iter + 1) * sub_dt;
