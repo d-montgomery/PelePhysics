@@ -409,9 +409,10 @@ SprayParticleContainer::updateParticles(
                 } else {
                   // Update breakup for KH-RT model
                   int myrank = amrex::ParallelDescriptor::MyProc();
-                  amrex::Print(myrank) << myrank << ": Calling updateBreakupKHRT for particle "
-                                       << pid << "\n"
-                                       << "      Reyn_d = " << Reyn_d << "\n";
+                  amrex::Print(myrank)
+                    << myrank << ": Calling updateBreakupKHRT for particle "
+                    << pid << "\n"
+                    << "      Reyn_d = " << Reyn_d << "\n";
                   updateBreakupKHRT(
                     pid, p, Reyn_d, fdat->dtmod * flow_dt, cBoilT.data(),
                     avg_inject_mass, B0, B1, C3, gpv, *fdat, N_SB, rf_d,
@@ -423,7 +424,7 @@ SprayParticleContainer::updateParticles(
             if (flags_array(cur_indx).isSingleValued()) {
               cvol *= 1. / (volfrac_fab(cur_indx));
             }
-#endif      
+#endif
             amrex::Print() << "Final Source Terms:\n";
             Real cur_coef = -cvol * sub_dt / flow_dt;
             if (!src_box.contains(cur_indx)) {
@@ -435,8 +436,8 @@ SprayParticleContainer::updateParticles(
             }
             if (fdat->mom_trans) {
               for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-                amrex::Print() << "    gpv.fluid_mom_src[" << dir << "] = "
-                             << gpv.fluid_mom_src[dir] << "\n";
+                amrex::Print() << "    gpv.fluid_mom_src[" << dir
+                               << "] = " << gpv.fluid_mom_src[dir] << "\n";
                 Gpu::Atomic::Add(
                   &momSrcarr(cur_indx, dir), cur_coef * gpv.fluid_mom_src[dir]);
               }
@@ -444,13 +445,13 @@ SprayParticleContainer::updateParticles(
             if (fdat->mass_trans) {
               Gpu::Atomic::Add(
                 &rhoSrcarr(cur_indx), cur_coef * gpv.fluid_mass_src);
-              amrex::Print() << "    gpv.fluid_mass_src = "
-                           << gpv.fluid_mass_src << "\n"
-                           << "    cur_coef = " << cur_coef << "\n";
+              amrex::Print()
+                << "    gpv.fluid_mass_src = " << gpv.fluid_mass_src << "\n"
+                << "    cur_coef = " << cur_coef << "\n";
               for (int pc = 0; pc < fdat->N_pc; ++pc) {
                 const int pcspec = fdat->pc_indx[pc];
-                amrex::Print() << "    gpv.fluid_Y_dot[" << pcspec << "] = "
-                             << gpv.fluid_Y_dot[pcspec] << "\n";
+                amrex::Print() << "    gpv.fluid_Y_dot[" << pcspec
+                               << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
                 Gpu::Atomic::Add(
                   &rhoYSrcarr(cur_indx, pc),
                   cur_coef * gpv.fluid_Y_dot[pcspec]);
@@ -458,8 +459,8 @@ SprayParticleContainer::updateParticles(
             }
             Gpu::Atomic::Add(
               &engSrcarr(cur_indx), cur_coef * gpv.fluid_eng_src);
-            amrex::Print() << "    gpv.fluid_eng_src = "
-                         << gpv.fluid_eng_src << "\n";
+            amrex::Print() << "    gpv.fluid_eng_src = " << gpv.fluid_eng_src
+                           << "\n";
             // Real new_time = static_cast<Real>(cur_iter + 1) * sub_dt;
             // Modify particle position by whole time step
             if (do_move && !fdat->fixed_parts && p.id() > 0 && !is_film) {
