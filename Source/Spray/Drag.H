@@ -634,6 +634,9 @@ calculateSpraySource(
         pmass = new_mass;
         dia_part = std::cbrt(6. * pmass / (M_PI * rho_part));
       } else {
+        for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
++            oldY_part[spf] = p.rdata(SprayComps::pstateY + spf);
++        }
         pmass = 0.;
         p.id() = -1;
         nsub = isub;
