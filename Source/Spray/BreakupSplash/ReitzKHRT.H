@@ -23,8 +23,6 @@ updateBreakupKHRT(
   const SBPtrs& rf,
   const bool make_new_drops)
 {
-  int myrank = amrex::ParallelDescriptor::MyProc();
-  amrex::Print(myrank) << myrank <<": In updateBreakupKHRT: \n";
   // Threshold to make new droplets normally
   const amrex::Real mthresh_jet = 0.03;
   // Threshold for when shedding mass is too high
@@ -42,20 +40,9 @@ updateBreakupKHRT(
   amrex::Real Y_part[SPRAY_FUEL_NUM] = {0.0};
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
     Y_part[spf] = p.rdata(SprayComps::pstateY + spf);
-    amrex::Print(myrank) << myrank <<":   Y_part[" << spf << "] = " << Y_part[spf] << "\n";
   }
   const amrex::Real rho_part = fdat.liqprops.rho_mix(Y_part, T_part, cBoilT);
   const amrex::Real mu_part = fdat.liqprops.mu_mix(Y_part, T_part, cBoilT);
-    const amrex::Real rho_part = fdat.liqprops.rho_mix(Y_part, T_part, cBoilT);
-  const amrex::Real mu_part = fdat.liqprops.mu_mix(Y_part, T_part, cBoilT);
-  amrex::Print(myrank) << myrank <<":   dia_part = " << dia_part << "\n"
-                      << myrank <<":   rho_part = " << rho_part << "\n"
-                      << myrank <<":   mu_part = " << mu_part << "\n"
-                      << myrank <<":   vel_part = (" << vel_part[0] << ", "
-                      << vel_part[1] << ", " << vel_part[2] << ")\n"
-                      << myrank <<":   T_part = " << T_part << "\n"
-                      << myrank <<":   rho_part = " << rho_part << "\n"
-                      << myrank <<":   mu_part = " << mu_part << "\n";
   // Minimum droplet radius for child droplets
   // Should not create child droplets that are near to or less than the minimum
   // allowable mass to avoid unphysical evaporation of mass

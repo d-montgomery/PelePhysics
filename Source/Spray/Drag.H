@@ -496,7 +496,7 @@ calculateSpraySource(
           amrex::Real X_norm = X_vi / sumXVap;
           rhoD_ri[pcspec] *= X_norm;
           //amrex::Print(myrank) << myrank << ":    (rhoD)_{r," << pcspec
-                               << "} = " << rhoD_ri[pcspec] << "\n";
+          //                     << "} = " << rhoD_ri[pcspec] << "\n";
           rhoDtotal += rhoD_ri[pcspec];
           sumYSkin += Y_skin[pcspec];
         }
@@ -662,8 +662,8 @@ calculateSpraySource(
   amrex::Real h_gas[NUM_SPECIES];
   eos.T2Hi(T_part, h_gas);
 #endif
-  //amrex::Print(myrank) << myrank << ": Source Terms:\n";
-  //amrex::Print(myrank) << myrank << ":    num_ppp = " << num_ppp << "\n";
+  amrex::Print(myrank) << myrank << ": Source Terms:\n";
+  amrex::Print(myrank) << myrank << ":    num_ppp = " << num_ppp << "\n";
   for (int pc = 0; pc < fdat.N_pc; ++pc) {
     const int pcspec = fdat.pc_indx[pc];
     amrex::Real oldY_part_pc =
@@ -673,17 +673,17 @@ calculateSpraySource(
     amrex::Real midot =
       (newY * pmass - oldY_part_pc * startmass) / (fdat.dtmod * flow_dt);
     gpv.fluid_Y_dot[pcspec] = num_ppp * midot;
-    //amrex::Print(myrank) << myrank << ":    gpv.fluid_Ydot[" << pcspec
-    //                     << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
-    //amrex::Print(myrank) << myrank << ":       newY = " << newY << "\n"
-    //                     << myrank << ":       pmass = " << pmass << "\n"
-    //                     << myrank << ":       oldY_part = " << oldY_part_pc
-    //                     << "\n"
-    //                     << myrank << ":       startmass = " << startmass
-    //                     << "\n"
-    //                     << myrank << ":       dtmod = " << fdat.dtmod << "\n"
-    //                     << myrank << ":       flow_dt = " << flow_dt << "\n"
-    //                     << myrank << ":       midot = " << midot << "\n";
+    amrex::Print(myrank) << myrank << ":    gpv.fluid_Ydot[" << pcspec
+                         << "] = " << gpv.fluid_Y_dot[pcspec] << "\n";
+    amrex::Print(myrank) << myrank << ":       newY = " << newY << "\n"
+                         << myrank << ":       pmass = " << pmass << "\n"
+                         << myrank << ":       oldY_part = " << oldY_part_pc
+                         << "\n"
+                         << myrank << ":       startmass = " << startmass
+                         << "\n"
+                         << myrank << ":       dtmod = " << fdat.dtmod << "\n"
+                         << myrank << ":       flow_dt = " << flow_dt << "\n"
+                         << myrank << ":       midot = " << midot << "\n";
 
 #ifdef USE_MANIFOLD_EOS
     gpv.fluid_eng_src = 0.0;
@@ -691,8 +691,8 @@ calculateSpraySource(
     gpv.fluid_eng_src += num_ppp * midot * h_gas[pcspec] * SprayUnits::eng_conv;
 #endif
   }
-  //amrex::Print(myrank) << myrank
-  //                     << ": gpv.fluid_eng_src = " << gpv.fluid_eng_src << "\n";
+  amrex::Print(myrank) << myrank
+                       << ": gpv.fluid_eng_src = " << gpv.fluid_eng_src << "\n";
   AMREX_D_TERM(p.rdata(SprayComps::pstateVel) = vel_part[0];
                , p.rdata(SprayComps::pstateVel + 1) = vel_part[1];
                , p.rdata(SprayComps::pstateVel + 2) = vel_part[2];);
