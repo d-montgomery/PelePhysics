@@ -212,14 +212,24 @@ struct calcVaporState<pele::physics::eos::Manifold>
     amrex::Real mbar_vap = 0.; // mean molar mass of evaporated fuel in vapor
     auto eos = pele::physics::PhysicsType::eos(fdat.eosparm);
 
-    // Calculate X_{v,n}- the vapour state
+    // Mole fraction of the droplet, need vector for many-to-one mapping later
+    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_dn{};
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
+      X_dn[spf] = Y_dn[spf] * mw_part / mw_ln;
+    }
 
+    int myrank = amrex::ParallelDescriptor::MyProc();
+    amrex::Print(myrank) << myrank
+                         << ": Vapor Mole Fractions (spray-species):\n";
+
+    // Estimate X_{v,n} from the liquid state
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fmspec = fdat.dep_manifold_indx[spf];
-      const amrex::Real mw_li = fdat.liqprops.mw_i(spf);
-      amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
-
+      const int fdspec = fdat.dep_indx[spf];
+      
       // Compute latent heat using correlation
+      amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
       amrex::Real part_latent =
         fdat.liqprops.latent_correlation_i(fdat.liqprops.boilT_i(spf), spf);
       L_n[spf] = part_latent;
@@ -227,35 +237,65 @@ struct calcVaporState<pele::physics::eos::Manifold>
       // psat - any approach should work because we populated part_latent
       amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
 
-      //
-      amrex::Real X_fluid = gpv.Yspec_fluid[fmspec] * gpv.mw_mix / mw_li;
+      // Mole fraction in gas phase
+      const amrex::Real X_gi = gpv.Yspec_fluid[fdspec] * gpv.mw_mix / mw_li;
+      amrex::Print(myrank) << myrank << ":    X_gi = " << X_gi << "\n";
+
+      // Estimate X_gn by distributing X_gi across all the liquid species
+      const amrex::Real sumXdn_SLi =
+        fdat.binary_csr_rowdotprod(fdspec, fdat.L_row, fdat.L_col, X_dn);
+      amrex::Real X_gn = X_dn[spf] * X_gi;
+      if (sumXdn_SLi > X_dn[spf]) {
+        // Multiple species deposit to fdspec, scale accordingly
+        X_gn /= sumXdn_SLi;
+      }
 
       if (pres_sat > X_fluid * gpv.p_fluid) {
-        amrex::Real X_dn = Y_dn[spf] * mw_part / mw_li;
+        const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
+        amrex::Real X_dn = Y_dn[spf] * mw_part / mw_ln;
         X_vn[spf] = X_dn * pres_sat / gpv.p_fluid;
         mbar_vap += X_vn[spf] * mw_li;
         sumXVap += X_vn[spf];
       } else {
         X_vn[spf] = 0.;
       }
+      amrex::Print(myrank) << myrank << ":    X_vn[" << spf
+                           << "] = " << X_vn[spf] << "\n";
     }
 
-    // Y_{g,i}^{pc}  is already stored in  gpv.Yspec_fluid
+    // Collapse vapor state X_{v,n} on to dependent gas species X_{v,i}
+    amrex::Print(myrank) << myrank << ": Vapor Mole Fractions (gas-species):\n";
+    amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> X_vi{};
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+      const int pcspec = fdat.pc_indx[pc];
+      X_vi[pcspec] =
+        fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, X_vn);
+      amrex::Print(myrank) << myrank << ":    X_vi[" << pcspec
+                           << "] = " << X_vi[pcspec] << "\n";
+    }
+
+    // Mass fractions in vapor state 
+    // Y_{g,i}^{pc} is already stored in gpv.Yspec_fluid
     // Calculate Y_{v,i}, Y_{r,i}^{pc}, and sum Y_{r,i}^{pc}
+    amrex::Print(myrank) << myrank << ": Vapor Mass Fractions
+    (gas-species):\n";
     amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_vi{0.0};
     amrex::Real sumYVap = 0.0;
     amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_ri_pc{0.0};
     amrex::Real sumYripc = 0.0;
     amrex::Real sumYgipc = 0.0;
     amrex::Real totalmwx = mbar_vap + (1. - sumXVap) * gpv.mw_mix;
-    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      if (X_vn[spf] > 0.) {
-        const amrex::Real mw_li = fdat.liqprops.mw_i(spf);
-        Y_vi[spf] = X_vn[spf] * mw_li / totalmwx;
-        sumYVap += Y_vi[spf]; //\sigma Y_{v,k}^{pc} in the document
-        Y_ri_pc[spf] = Y_vi[spf] + rule * (gpv.Yspec_fluid[spf] - Y_vi[spf]);
-        sumYripc += Y_ri_pc[spf];         //\sigma Y_{r,k}^{pc} in the document
-        sumYgipc += gpv.Yspec_fluid[spf]; //\sigma Y_{g,k}^{pc} in the document
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+      const int pcspec = fdat.pc_indx[pc];
+      if (X_vi[pcspec] > 0.) {
+        Y_vi[pcspec] = X_vi[pcspec] * gpv.mw[pcspec] / totalmwx;
+        sumYVap += Y_vi[pcspec];
+        Y_ri_pc[pcspec] = Y_vi[pcspec] + rule * (gpv.Yspec_fluid[pcspec] - Y_vi[pcspec]);
+        sumYripc += Y_ri_pc[pcspec];         //\sigma Y_{r,k}^{pc} in the docs
+        sumYgipc += gpv.Yspec_fluid[pcspec]; //\sigma Y_{g,k}^{pc} in the docs
+        amrex::Print(myrank)
+          << myrank << ":    Y_vi[" << pcspec << "] = " << Y_vi[pcspec] << "\n"
+          << myrank << ":    Y_ri_pc[" << pcspec << "] = " << Y_ri_pc[pcspec] << "\n";
       }
     }
 
@@ -269,12 +309,14 @@ struct calcVaporState<pele::physics::eos::Manifold>
 
     // Alternative way of doing above without using W_ij assuming W_ij is some
     // row exchanged form of the identity matrix
-
+    // This could be more efficient with mapping from pc -> manifold species
+    // with loop over N_pc instead of SPRAY_FUEL_NUM
     for (int spf = 0; spf < SPRAY_FUEL_NUM; spf++) {
-      if (X_vn[spf] > 0.) {
+      const int fdspec = fdat.dep_indx[spf];
+      if (X_vi[fdspec] > 0.) {
         const int fmspec = fdat.dep_manifold_indx[spf];
-        WYgi[fmspec] = gpv.Yspec_fluid[spf];
-        WYri[fmspec] = Y_ri_pc[spf];
+        WYgi[fmspec] = gpv.Yspec_fluid[fdspec];
+        WYri[fmspec] = Y_ri_pc[fdspec];
       }
     }
 
@@ -428,8 +470,9 @@ calculateSpraySource(
                                          (T_skin + sutherland_temp);
     mu_skin *= sutherland_ratio;
     lambda_skin *= sutherland_ratio;
-    for (int spf = 0; spf < NUM_SPECIES; ++spf) {
-      rhoD_ri[spf] *= sutherland_ratio;
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+        const int pcspec = fdat.pc_indx[pc];
+      rhoD_ri[pcspec] *= sutherland_ratio;
     }
     rho_skin /= temp_ratio;
 #endif
