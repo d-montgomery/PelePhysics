@@ -265,11 +265,11 @@ SprayParticleContainer::spraySetup(
   amrex::Gpu::copy(
     amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
     m_sprayData->pc_indx);
-  
+
   amrex::Print() << "\nMapping for spray species: \n";
   for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << spf << ": "
-                   << m_sprayFuelNames[spf] << "\n     mapped to gas species "
+    amrex::Print() << spf << ": " << m_sprayFuelNames[spf]
+                   << "\n     mapped to gas species "
                    << m_sprayData->dep_indx[spf] << ": "
                    << spec_names[m_sprayData->dep_indx[spf]]
                    << "\n     dep_indx[" << spf
@@ -308,7 +308,7 @@ SprayParticleContainer::spraySetup(
     chemspec_names, eosparms_h);
   pele::physics::eos::speciesNames<pele::physics::PhysicsType::eos_type>(
     manivar_names, eosparms_h);
-  
+
   std::set<std::string> unique_chem_dep_names(
     m_sprayDepNames, m_sprayDepNames + SPRAY_FUEL_NUM);
   std::set<std::string> unique_manifold_dep_names(
@@ -326,11 +326,12 @@ SprayParticleContainer::spraySetup(
 
   for (int i = 0; i < SPRAY_FUEL_NUM; ++i) {
     amrex::Print() << "\nSpray species " << m_sprayFuelNames[i]
-                   << " deposits to: \n"; 
+                   << " deposits to: \n";
     for (int ns = 0; ns < chemspec_names.size(); ++ns) {
       std::string gas_spec = chemspec_names[ns];
       if (gas_spec == m_sprayDepNames[i]) {
-        amrex::Print() << "   Chemical species from manifold " << chemspec_names[ns] << "\n";
+        amrex::Print() << "   Chemical species from manifold "
+                       << chemspec_names[ns] << "\n";
         m_sprayData->dep_indx[i] = ns;
       }
     }
@@ -375,28 +376,29 @@ SprayParticleContainer::spraySetup(
   amrex::Gpu::copy(
     amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
     m_sprayData->pc_indx);
-  
+
   // Check that m_sprayData->N_pc = NUM_SPECIES - 1 (only true for manifold EOS)
   if (m_sprayData->N_pc != NUM_SPECIES - 1) {
-    Abort( 
+    Abort(
       "Number of phase change species (" + std::to_string(m_sprayData->N_pc) +
       ") does not equal number of manifold variables - 1 (" +
       std::to_string(NUM_SPECIES - 1) + ")");
   }
 
   // Mapping from phase change species to manifold variable
-  amrex::Print() << "\nMapping from phase change species to manifold variables:\n";
+  amrex::Print()
+    << "\nMapping from phase change species to manifold variables:\n";
   for (int pc = 0; pc < m_sprayData->N_pc; ++pc) {
     int pcspec = m_sprayData->pc_indx[pc];
     m_sprayData->pc_manifold_indx[pc] = -1;
-    
+
     // Find which spray fuel species deposits to this phase change species
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       if (m_sprayData->dep_indx[spf] == pcspec) {
         m_sprayData->pc_manifold_indx[pc] = m_sprayData->dep_manifold_indx[spf];
         amrex::Print() << "    pc = " << pc << ": " << chemspec_names[pcspec]
-                       << " maps to " 
-                       << manivar_names[m_sprayData->pc_manifold_indx[pc]] 
+                       << " maps to "
+                       << manivar_names[m_sprayData->pc_manifold_indx[pc]]
                        << "\n";
         break;
       }

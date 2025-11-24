@@ -203,7 +203,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       const int fmspec = fdat.dep_manifold_indx[spf];
       const int fdspec = fdat.dep_indx[spf];
-      
+
       // Compute latent heat using correlation
       amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
       amrex::Real part_latent =
@@ -214,7 +214,8 @@ struct calcVaporState<pele::physics::eos::Manifold>
       amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
 
       // Mole fraction in gas phase
-      const amrex::Real X_gi = gpv.Yspec_fluid[fdspec] * gpv.mw_mix / gpv.mw[fmspec];
+      const amrex::Real X_gi =
+        gpv.Yspec_fluid[fdspec] * gpv.mw_mix / gpv.mw[fmspec];
 
       // Estimate X_gn by distributing X_gi across all the liquid species
       const amrex::Real sumXdn_SLi =
@@ -244,7 +245,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
         fdat.binary_csr_rowdotprod(pcspec, fdat.L_row, fdat.L_col, X_vn);
     }
 
-    // Mass fractions in vapor state 
+    // Mass fractions in vapor state
     // Y_{g,i}^{pc} is already stored in gpv.Yspec_fluid
     // Calculate Y_{v,i}, Y_{r,i}^{pc}, and sum Y_{r,i}^{pc}
     amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_vi{0.0};
@@ -258,7 +259,8 @@ struct calcVaporState<pele::physics::eos::Manifold>
       if (X_vi[pcspec] > 0.) {
         Y_vi[pcspec] = X_vi[pcspec] * gpv.mw[pcspec] / totalmwx;
         sumYVap += Y_vi[pcspec];
-        Y_ri_pc[pcspec] = Y_vi[pcspec] + rule * (gpv.Yspec_fluid[pcspec] - Y_vi[pcspec]);
+        Y_ri_pc[pcspec] =
+          Y_vi[pcspec] + rule * (gpv.Yspec_fluid[pcspec] - Y_vi[pcspec]);
         sumYripc += Y_ri_pc[pcspec];         //\sigma Y_{r,k}^{pc} in the docs
         sumYgipc += gpv.Yspec_fluid[pcspec]; //\sigma Y_{g,k}^{pc} in the docs
       }
@@ -433,7 +435,7 @@ calculateSpraySource(
     mu_skin *= sutherland_ratio;
     lambda_skin *= sutherland_ratio;
     for (int pc = 0; pc < fdat.N_pc; ++pc) {
-        const int pcspec = fdat.pc_indx[pc];
+      const int pcspec = fdat.pc_indx[pc];
       rhoD_ri[pcspec] *= sutherland_ratio;
     }
     rho_skin /= temp_ratio;
