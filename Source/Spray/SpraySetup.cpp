@@ -362,8 +362,8 @@ SprayParticleContainer::spraySetup(
         " not found in species available in the manifold");
     }
     for (int ns = 0; ns < manivar_names.size(); ++ns) {
-      std::string gas_spec = manivar_names[ns];
-      if (gas_spec == m_sprayManifoldDepNames[i]) {
+      std::string manifold_var = manivar_names[ns];
+      if (manifold_var == m_sprayManifoldDepNames[i]) {
         amrex::Print() << "   Manifold var " << manivar_names[ns] << "\n";
         m_sprayData->dep_manifold_indx[i] = ns;
       }
@@ -397,6 +397,14 @@ SprayParticleContainer::spraySetup(
   amrex::Gpu::copy(
     amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
     m_sprayData->pc_indx);
+  
+  // Check that m_sprayData->N_pc = NUM_SPECIES - 1
+  if (m_sprayData->N_pc != NUM_SPECIES - 1) {
+    Abort( 
+      "Number of phase change species (" + std::to_string(m_sprayData->N_pc) +
+      ") does not equal number of manifold variables - 1 (" +
+      std::to_string(NUM_SPECIES - 1) + ")");
+  }
 
   // Initialize MW for spray model
   amrex::Vector<amrex::Real> mw(chemspec_names.size());
@@ -404,20 +412,33 @@ SprayParticleContainer::spraySetup(
   eos.molecular_weight(mw.data());
   m_sprayData->liqprops.init_mw(mw.data(), m_sprayData->dep_indx.data());
 
+  // Mapping from phase change species to manifold variable
+  for (int pc = 0; pc < m_sprayData->N_pc; ++pc) {
+    int pcspec = m_sprayData->pc_indx[pc];
+    m_sprayData->pc_manifold_indx[pc] = -1;
+    
+    // Find which spray fuel species deposits to this phase change species
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      if (m_sprayData->dep_indx[spf] == pcspec) {
+        m_sprayData->pc_manifold_indx[pc] = m_sprayData->dep_manifold_indx[spf];
+        amrex::Print() << "\nPhase change species " << chemspec_names[pcspec]
+                       << " (pc=" << pc << ") deposits to manifold variable: " 
+                       << manivar_names[m_sprayData->pc_manifold_indx[pc]] 
+                       << "\n";
+        break;
+      }
+    }
+    if (m_sprayData->pc_manifold_indx[pc] < 0) {
+      Abort(
+        "Mapping from phase-change species " + chemspec_names[pcspec] +
+        " to manifold variable not defined");
+    }
+  }
+
   // TODO: Handle latent heat for Manifold EOS
 
   // DEBUG PRINT STATEMENTS ---------------------------------------------------
-  amrex::Print() << "\n Spray fuel species mapping to gas phase species: ";
-  for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << "\n  Spray fuel species " << spf << ": "
-                   << m_sprayFuelNames[spf]
-                   << "\n     mapped to manifold parameter "
-                   << m_sprayData->dep_manifold_indx[spf] << ": "
-                   << manivar_names[m_sprayData->dep_manifold_indx[spf]]
-                   << "\n     dep_manifold_indx[" << spf
-                   << "] = " << m_sprayData->dep_manifold_indx[spf];
-  }
-  amrex::Print() << "L_row = ";
+  amrex::Print() << "\nL_row = ";
   for (int spf = 0; spf < SPRAY_FUEL_NUM + 1; ++spf) {
     amrex::Print() << m_sprayData->L_row[spf] << " ";
   }
@@ -427,20 +448,12 @@ SprayParticleContainer::spraySetup(
   }
   amrex::Print() << "\n";
 
-  amrex::Print() << "\n Phase change gas species indices: \n";
+  amrex::Print() << "\nPhase change gas species indices: \n";
   for (int i = 0; i < m_sprayData->N_pc; ++i) {
     int pcspec = m_sprayData->pc_indx[i];
-    amrex::Print() << " pc_indx[" << i << "] = " << pcspec << ": "
-                   << chemspec_names[pcspec] << "\n";
-  }
-
-  amrex::Print() << "Indx vs. pc_indx:\n";
-  for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << "   " << spf << ": dep_indx[" << spf
-                   << "] = " << m_sprayData->dep_indx[spf] << "\n      pc_indx["
-                   << spf << "] = " << m_sprayData->pc_indx[spf]
-                   << "\n      dep_manifold_indx[" << spf
-                   << "] = " << m_sprayData->dep_manifold_indx[spf] << "\n";
+    amrex::Print() << "   pc_indx[" << i << "] = " << pcspec << ", ChemSpec "
+                   << chemspec_names[pcspec] << "maps to manifold var "
+                   << manivar_names[pcspec] << "\n";
   }
 
   // END DEBUG PRINT STATEMENTS ------------------------------------------------

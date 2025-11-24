@@ -308,14 +308,12 @@ struct calcVaporState<pele::physics::eos::Manifold>
 
     // Alternative way of doing above without using W_ij assuming W_ij is some
     // row exchanged form of the identity matrix
-    // This could be more efficient with mapping from pc -> manifold species
-    // with loop over N_pc instead of SPRAY_FUEL_NUM
-    for (int spf = 0; spf < SPRAY_FUEL_NUM; spf++) {
-      const int fdspec = fdat.dep_indx[spf];
-      if (X_vi[fdspec] > 0.) {
-        const int fmspec = fdat.dep_manifold_indx[spf];
-        WYgi[fmspec] = gpv.Yspec_fluid[fdspec];
-        WYri[fmspec] = Y_ri_pc[fdspec];
+    for (int pc = 0; pc < fdat.N_pc; ++pc) {
+      const int pcspec = fdat.pc_indx[pc];
+      if (X_vi[pcspec] > 0.) {
+        const int pcmanspec = fdat.pc_manifold_indx[pc];
+        WYgi[pcmanspec] = gpv.Yspec_fluid[pcspec];
+        WYri[pcmanspec] = Y_ri_pc[pcspec];
       }
     }
 
