@@ -238,7 +238,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
       amrex::Real pres_sat = fdat.liqprops.psat_i(T_part, spf, part_latent);
 
       // Mole fraction in gas phase
-      const amrex::Real X_gi = gpv.Yspec_fluid[fdspec] * gpv.mw_mix / mw_li;
+      const amrex::Real X_gi = gpv.Yspec_fluid[fdspec] * gpv.mw_mix / gpv.mw[fmspec];
       amrex::Print(myrank) << myrank << ":    X_gi = " << X_gi << "\n";
 
       // Estimate X_gn by distributing X_gi across all the liquid species
@@ -250,11 +250,11 @@ struct calcVaporState<pele::physics::eos::Manifold>
         X_gn /= sumXdn_SLi;
       }
 
-      if (pres_sat > X_fluid * gpv.p_fluid) {
+      if (pres_sat > X_gn * gpv.p_fluid) {
         const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
         amrex::Real X_dn = Y_dn[spf] * mw_part / mw_ln;
         X_vn[spf] = X_dn * pres_sat / gpv.p_fluid;
-        mbar_vap += X_vn[spf] * mw_li;
+        mbar_vap += X_vn[spf] * mw_ln;
         sumXVap += X_vn[spf];
       } else {
         X_vn[spf] = 0.;
@@ -277,8 +277,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
     // Mass fractions in vapor state 
     // Y_{g,i}^{pc} is already stored in gpv.Yspec_fluid
     // Calculate Y_{v,i}, Y_{r,i}^{pc}, and sum Y_{r,i}^{pc}
-    amrex::Print(myrank) << myrank << ": Vapor Mass Fractions
-    (gas-species):\n";
+    amrex::Print(myrank) << myrank << ": Vapor Mass Fractions (gas-species):\n";
     amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_vi{0.0};
     amrex::Real sumYVap = 0.0;
     amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Y_ri_pc{0.0};
