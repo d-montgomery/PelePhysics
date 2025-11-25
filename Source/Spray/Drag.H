@@ -228,8 +228,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
 
       if (pres_sat > X_gn * gpv.p_fluid) {
         const amrex::Real mw_ln = fdat.liqprops.mw_i(spf);
-        amrex::Real X_dn = Y_dn[spf] * mw_part / mw_ln;
-        X_vn[spf] = X_dn * pres_sat / gpv.p_fluid;
+        X_vn[spf] = X_dn[spf] * pres_sat / gpv.p_fluid;
         mbar_vap += X_vn[spf] * mw_ln;
         sumXVap += X_vn[spf];
       } else {
