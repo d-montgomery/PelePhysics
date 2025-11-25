@@ -726,15 +726,25 @@ Spray Validation
 Single Droplet Tests
 --------------------
 
-Single droplet tests are performed in 2D with PeleLMeX and compared with experimental results published in literature. These tests are setup in ``PeleLMeX/Exec/RegTests/SingleDropEvap`` and can be compiled with ``SPRAY_GCM=TRUE`` or ``FALSE``. To run a test case with the *PeleMP* or *GCM* liquid properties, simply open ``Validate.py`` and set the variables for ``case_name``, ``LiqPropsType``, and the method for calculating :math:`p_{\rm sat}` for the PeleMP model. For example ::
+Single droplet tests are performed in 2D with PeleLMeX and compared with experimental results published in literature. These tests are setup in ``PeleLMeX/Exec/RegTests/SingleDropEvap`` and can be run with the ``Validate.py`` script. To run a test case with the *PeleMP* or *GCM* liquid properties, simply run ``Validate.py`` with the desired variables for ``case_name``, ``LiqPropsType``, and the method for calculating :math:`p_{\rm sat}` for the PeleMP model. Using the build flag ``-b`` ensures the correct executable is built for each case. For example: ::
 
-   case_name = "WongLin"
-   LiqPropsType = "gcm"
+   # Build a new executable and run WongLin with GCM
+   python Validate.py -b -c WongLin
 
-   # Psat model for PeleMP: "Antoine" or "Clasius-Clapeyron"
-   PeleMP_PsatModel = "Antoine"
+   # Build a new executable and run WongLin with PeleMP and Clasius-Clapeyron psat
+   python Validate.py -b -c WongLin -l mp -p CC
 
-then run ``python Validate.py``.
+   # Build a new executable and run RungeJP8 many-to-one with GCM and Manifold EOS
+   python Validate.py -b -c RungeJP8 -m --cmlm_path <local-path-to-cmlm>
+
+   # Build a new executable and run RungeJP8 one-to-one with HyChem mechanism with GCM
+   python Validate.py -b -c RungeJP8-H
+
+Comparison plots can be generated after the simulations have completed by running: ::
+
+   # Generate comparison plots for all RungeJP8 cases
+   python CompareResults.py -c RungeJP8
+
 The following table details the parameters of each test:
 
 .. table::
