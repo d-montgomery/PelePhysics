@@ -93,16 +93,18 @@ struct SprayData
   amrex::Real dtmod = 0.5;
   amrex::RealVect body_force = amrex::RealVect::TheZeroVector();
   amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_indx{};
-  amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_manifold_indx{};
   amrex::GpuArray<int, SPRAY_FUEL_NUM> L_col{};
 #ifndef USE_MANIFOLD_EOS
   amrex::GpuArray<int, NUM_SPECIES + 1> L_row{};
+  amrex::GpuArray<int, 0> dep_manifold_indx{};
+  amrex::GpuArray<int, 0> pc_manifold_indx{};
 #else
   amrex::GpuArray<int, SPRAY_FUEL_NUM + 1> L_row{};
+  amrex::GpuArray<int, SPRAY_FUEL_NUM> dep_manifold_indx{};
+  amrex::GpuArray<int, NUM_SPECIES - 1> pc_manifold_indx{};
 #endif
   int N_pc = 0;
   int* pc_indx = nullptr;
-  amrex::GpuArray<int, NUM_SPECIES - 1> pc_manifold_indx{};
 
   // Instance of the liquid properties for the specified model
   pele::physics::SprayProps::LiqPropType liqprops;
