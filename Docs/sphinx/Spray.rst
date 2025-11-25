@@ -783,9 +783,9 @@ The following table details the parameters of each test:
 
 .. figure:: /Visualization/runge_jp8_res_2025.png
    :align: center
-   :figwidth: 85%
+   :figwidth: 80%
 
-   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from with Runge et al. [#runge]_ This demonstrates three different approaches: (i) A detailed non-reacting mechanism with 67 species in the liquid and gas phases, (ii) a single liquid species and corresponding single Hychem gas species, where the thermophysical properties of the liquid species are estimated using FuelLib's mixture properties, and (iii) a many-to-one mapping where 67 liquid species evaporate to a single Hychem gas species. The many-to-one cases for PeleGCM and PeleMP with Antoine fit are indistinguishable on this plot.
+   Droplet evaporation of POSF10264 (JP8) compared to experimental measurements from Runge et al. [#runge]_ This demonstrates three different approaches: (i) A detailed non-reacting mechanism with 67 species in the liquid and gas phases, (ii) a single liquid species and corresponding single Hychem gas species, where the thermophysical properties of the liquid species are estimated using FuelLib's mixture properties, and (iii) a many-to-one mapping where 67 liquid species evaporate to a single Hychem gas species with and without the Manifold EOS. The many-to-one cases for PeleGCM and PeleMP with Antoine fit are indistinguishable on this plot.
 
 .. [#owen] "PeleMP: The Multiphysics Solver for the Combustion Pele Adaptive Mesh Refinement Code Suite," L. D. Owen, W. Ge, M. Rieth, M. Arienti, L. Esclapez, B. S. Soriano, M. E. Mueller, M. Day, R. Sankaran, and J. H. Chen, J. Fluids Eng., vol. 146, no. 4, pp. 1-18 (2024), doi: `10.1115/1.4064494 <https://doi.org/10.1115/1.4064494>`_.
 
