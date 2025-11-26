@@ -104,7 +104,9 @@ struct SprayData
   amrex::GpuArray<int, NUM_SPECIES - 1> pc_manifold_indx{};
 #endif
   int N_pc = 0;
-  int* pc_indx = nullptr;
+  // We will only use the furst N_pc entries, but don't know that number a
+  // priori so allocate NUM_SPECIES which is always >= N_pc
+  amrex::GpuArray<int, NUM_SPECIES> pc_indx;
 
   // Instance of the liquid properties for the specified model
   pele::physics::SprayProps::LiqPropType liqprops;

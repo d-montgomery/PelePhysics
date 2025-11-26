@@ -75,6 +75,12 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
     pp.getarr("fuel_species", fuel_names);
     if (pp.contains("dep_fuel_species")) {
       has_dep_spec = true;
+      const int ndfuel = pp.countval("dep_fuel_species");
+      if (ndfuel != SPRAY_FUEL_NUM) {
+        amrex::Abort(
+          "Number of dep_fuel_species in input file must match "
+          "SPRAY_FUEL_NUM");
+      }
       pp.getarr("dep_fuel_species", dep_fuel_names);
     }
 #ifdef USE_MANIFOLD_EOS
@@ -249,14 +255,8 @@ SprayParticleContainer::spraySetup(
   }
 
   // Set of phase change species
-  int tmp_pc_indx[NUM_SPECIES];
-  m_sprayData->N_pc =
-    m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
-  m_sprayData->pc_indx =
-    (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
-  amrex::Gpu::copy(
-    amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
-    m_sprayData->pc_indx);
+  m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(
+    m_sprayData->L_row, m_sprayData->pc_indx.data());
 
   if (m_sprayData->verbose) {
     amrex::Print() << "\nMapping for spray species: \n";
@@ -360,14 +360,8 @@ SprayParticleContainer::spraySetup(
   }
 
   // Set of phase change species
-  int tmp_pc_indx[SPRAY_FUEL_NUM];
-  m_sprayData->N_pc =
-    m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
-  m_sprayData->pc_indx =
-    (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
-  amrex::Gpu::copy(
-    amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
-    m_sprayData->pc_indx);
+  m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(
+    m_sprayData->L_row, m_sprayData->pc_indx.data());
 
   // Check that m_sprayData->N_pc = NUM_SPECIES - 1 (only true for manifold EOS)
   if (m_sprayData->N_pc != NUM_SPECIES - 1) {
