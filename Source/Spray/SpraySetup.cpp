@@ -40,7 +40,7 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
   ParmParse pp("particles");
   // Control the verbosity of the Particle class
   pp.query("v", particle_verbose);
-
+  m_sprayData->verbose = particle_verbose;
   pp.query("mass_transfer", m_sprayData->mass_trans);
   pp.query("mom_transfer", m_sprayData->mom_trans);
   pp.query("fixed_parts", m_sprayData->fixed_parts);
@@ -266,20 +266,20 @@ SprayParticleContainer::spraySetup(
     amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
     m_sprayData->pc_indx);
 
-  amrex::Print() << "\nMapping for spray species: \n";
-  for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << spf << ": " << m_sprayFuelNames[spf]
-                   << "\n     mapped to gas species "
-                   << m_sprayData->dep_indx[spf] << ": "
-                   << spec_names[m_sprayData->dep_indx[spf]]
-                   << "\n     dep_indx[" << spf
-                   << "] = " << m_sprayData->dep_indx[spf] << "\n";
-  }
-  amrex::Print() << "\nMapping for phase change species: \n";
-  for (int i = 0; i < m_sprayData->N_pc; ++i) {
-    int pcspec = m_sprayData->pc_indx[i];
-    amrex::Print() << "    pc_indx[" << i << "] = " << pcspec << ": "
-                   << spec_names[pcspec] << "\n";
+  if (m_sprayData->verbose) {
+    amrex::Print() << "\nMapping for spray species: \n";
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      amrex::Print() << spf << ": " << m_sprayFuelNames[spf]
+                     << "\n     mapped to gas species "
+                     << m_sprayData->dep_indx[spf] << ": "
+                     << spec_names[m_sprayData->dep_indx[spf]] << "\n";
+    }
+    amrex::Print() << "\nMapping for phase change species: \n";
+    for (int i = 0; i < m_sprayData->N_pc; ++i) {
+      int pcspec = m_sprayData->pc_indx[i];
+      amrex::Print() << "    pc_indx[" << i << "] = " << pcspec << ": "
+                     << spec_names[pcspec] << "\n";
+    }
   }
 
   auto eos = pele::physics::PhysicsType::eos(eosparms_h);

@@ -79,6 +79,7 @@ struct GasPhaseVals
 // Structure containing values for the liquid sprays
 struct SprayData
 {
+  int verbose = 0;          // Same as m_verbose in the SprayParticleContainer
   bool mass_trans = true;   // If evaporation is on
   bool mom_trans = true;    // If momentum transfer is on
   bool fixed_parts = false; // If particles are fixed in place
