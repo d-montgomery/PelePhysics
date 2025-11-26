@@ -195,7 +195,7 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
   }
 
   if (particle_verbose >= 1 && ParallelDescriptor::IOProcessor()) {
-    Print() << "Spray fuel species " << m_sprayFuelNames[0];
+    Print() << "Spray fuel species: " << m_sprayFuelNames[0];
 #if SPRAY_FUEL_NUM > 1
     for (int i = 1; i < SPRAY_FUEL_NUM; ++i) {
       Print() << ", " << m_sprayFuelNames[i];
@@ -232,14 +232,6 @@ SprayParticleContainer::spraySetup(
       Abort(
         "Spray species " + m_sprayFuelNames[spf] + " deposits to " +
         m_sprayDepNames[spf] + ", which is not found in gas species list");
-    }
-  }
-
-  for (int i = 0; i < SPRAY_FUEL_NUM; ++i) {
-    for (int j = i + 1; j < SPRAY_FUEL_NUM; ++j) {
-      if (m_sprayData->dep_indx[i] == m_sprayData->dep_indx[j]) {
-        m_sprayData->liquid_spec_share_gas_dep = true;
-      }
     }
   }
 
@@ -417,7 +409,6 @@ SprayParticleContainer::spraySetup(
   eos.molecular_weight(mw.data());
   m_sprayData->liqprops.init_mw(mw.data(), m_sprayData->dep_indx.data());
 
-  // TODO: Handle latent heat for Manifold EOS
 #endif
   // Stuff for both detailed chem and manifold
   for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
