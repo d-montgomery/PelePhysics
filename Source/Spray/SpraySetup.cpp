@@ -40,7 +40,7 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
   ParmParse pp("particles");
   // Control the verbosity of the Particle class
   pp.query("v", particle_verbose);
-
+  m_sprayData->verbose = particle_verbose;
   pp.query("mass_transfer", m_sprayData->mass_trans);
   pp.query("mom_transfer", m_sprayData->mom_trans);
   pp.query("fixed_parts", m_sprayData->fixed_parts);
@@ -75,6 +75,12 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
     pp.getarr("fuel_species", fuel_names);
     if (pp.contains("dep_fuel_species")) {
       has_dep_spec = true;
+      const int ndfuel = pp.countval("dep_fuel_species");
+      if (ndfuel != SPRAY_FUEL_NUM) {
+        amrex::Abort(
+          "Number of dep_fuel_species in input file must match "
+          "SPRAY_FUEL_NUM");
+      }
       pp.getarr("dep_fuel_species", dep_fuel_names);
     }
 #ifdef USE_MANIFOLD_EOS
@@ -195,7 +201,7 @@ SprayParticleContainer::readSprayParams(int& particle_verbose)
   }
 
   if (particle_verbose >= 1 && ParallelDescriptor::IOProcessor()) {
-    Print() << "Spray fuel species " << m_sprayFuelNames[0];
+    Print() << "Spray fuel species: " << m_sprayFuelNames[0];
 #if SPRAY_FUEL_NUM > 1
     for (int i = 1; i < SPRAY_FUEL_NUM; ++i) {
       Print() << ", " << m_sprayFuelNames[i];
@@ -235,14 +241,6 @@ SprayParticleContainer::spraySetup(
     }
   }
 
-  for (int i = 0; i < SPRAY_FUEL_NUM; ++i) {
-    for (int j = i + 1; j < SPRAY_FUEL_NUM; ++j) {
-      if (m_sprayData->dep_indx[i] == m_sprayData->dep_indx[j]) {
-        m_sprayData->liquid_spec_share_gas_dep = true;
-      }
-    }
-  }
-
   // CSR representation of mapping matrix L
   int nnz = 0; // number of non-zeros
   m_sprayData->L_row[0] = 0;
@@ -257,36 +255,31 @@ SprayParticleContainer::spraySetup(
   }
 
   // Set of phase change species
-  int tmp_pc_indx[NUM_SPECIES];
-  m_sprayData->N_pc =
-    m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
-  m_sprayData->pc_indx =
-    (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
-  amrex::Gpu::copy(
-    amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
-    m_sprayData->pc_indx);
+  m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(
+    m_sprayData->L_row, m_sprayData->pc_indx.data());
 
-  amrex::Print() << "\nMapping for spray species: \n";
-  for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-    amrex::Print() << spf << ": " << m_sprayFuelNames[spf]
-                   << "\n     mapped to gas species "
-                   << m_sprayData->dep_indx[spf] << ": "
-                   << spec_names[m_sprayData->dep_indx[spf]]
-                   << "\n     dep_indx[" << spf
-                   << "] = " << m_sprayData->dep_indx[spf] << "\n";
-  }
-  amrex::Print() << "\nMapping for phase change species: \n";
-  for (int i = 0; i < m_sprayData->N_pc; ++i) {
-    int pcspec = m_sprayData->pc_indx[i];
-    amrex::Print() << "    pc_indx[" << i << "] = " << pcspec << ": "
-                   << spec_names[pcspec] << "\n";
+  if (m_sprayData->verbose) {
+    amrex::Print() << "\nMapping for spray species: \n";
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      amrex::Print() << spf << ": " << m_sprayFuelNames[spf]
+                     << "\n     mapped to gas species "
+                     << m_sprayData->dep_indx[spf] << ": "
+                     << spec_names[m_sprayData->dep_indx[spf]] << "\n";
+    }
+    amrex::Print() << "\nMapping for phase change species: \n";
+    for (int i = 0; i < m_sprayData->N_pc; ++i) {
+      int pcspec = m_sprayData->pc_indx[i];
+      amrex::Print() << "    pc_indx[" << i << "] = " << pcspec << ": "
+                     << spec_names[pcspec] << "\n";
+    }
   }
 
   auto eos = pele::physics::PhysicsType::eos(eosparms_h);
   amrex::GpuArray<amrex::Real, NUM_SPECIES> mw;
   Vector<Real> fuelEnth(NUM_SPECIES);
   eos.molecular_weight(mw.data());
-  m_sprayData->liqprops.init_mw(mw, m_sprayData->dep_indx.data());
+  m_sprayData->liqprops.init_mw(
+    mw, m_sprayData->dep_indx.data(), m_sprayData->N_pc);
   eos.T2Hi(m_sprayData->liqprops.ref_T, fuelEnth.data());
   for (int ns = 0; ns < SPRAY_FUEL_NUM; ++ns) {
     const int fdspec = m_sprayData->dep_indx[ns];
@@ -368,14 +361,8 @@ SprayParticleContainer::spraySetup(
   }
 
   // Set of phase change species
-  int tmp_pc_indx[SPRAY_FUEL_NUM];
-  m_sprayData->N_pc =
-    m_sprayData->binary_csr_nonzerorows(m_sprayData->L_row, tmp_pc_indx);
-  m_sprayData->pc_indx =
-    (int*)amrex::The_Arena()->alloc(m_sprayData->N_pc * sizeof(int));
-  amrex::Gpu::copy(
-    amrex::Gpu::hostToDevice, tmp_pc_indx, tmp_pc_indx + m_sprayData->N_pc,
-    m_sprayData->pc_indx);
+  m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(
+    m_sprayData->L_row, m_sprayData->pc_indx.data());
 
   // Check that m_sprayData->N_pc = NUM_SPECIES - 1 (only true for manifold EOS)
   if (m_sprayData->N_pc != NUM_SPECIES - 1) {
@@ -415,9 +402,9 @@ SprayParticleContainer::spraySetup(
   amrex::Vector<amrex::Real> mw(chemspec_names.size());
   auto eos = pele::physics::PhysicsType::eos(eosparms_h);
   eos.molecular_weight(mw.data());
-  m_sprayData->liqprops.init_mw(mw.data(), m_sprayData->dep_indx.data());
+  m_sprayData->liqprops.init_mw(
+    mw.data(), m_sprayData->dep_indx.data(), m_sprayData->N_pc);
 
-  // TODO: Handle latent heat for Manifold EOS
 #endif
   // Stuff for both detailed chem and manifold
   for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {

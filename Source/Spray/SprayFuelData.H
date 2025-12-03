@@ -79,11 +79,11 @@ struct GasPhaseVals
 // Structure containing values for the liquid sprays
 struct SprayData
 {
+  int verbose = 0;          // Same as m_verbose in the SprayParticleContainer
   bool mass_trans = true;   // If evaporation is on
   bool mom_trans = true;    // If momentum transfer is on
   bool fixed_parts = false; // If particles are fixed in place
   bool do_splash = false;
-  bool liquid_spec_share_gas_dep = false;
   int do_breakup = 0; // 0 - no breakup modeling, 1 - TAB model, 2 - KHRT model
   // Min cell volume fraction to add sources to
   amrex::Real min_eb_vfrac = 0.05;
@@ -104,7 +104,9 @@ struct SprayData
   amrex::GpuArray<int, NUM_SPECIES - 1> pc_manifold_indx{};
 #endif
   int N_pc = 0;
-  int* pc_indx = nullptr;
+  // We will only use the first N_pc entries, but don't know that number a
+  // priori so allocate NUM_SPECIES which is always >= N_pc
+  amrex::GpuArray<int, NUM_SPECIES> pc_indx;
 
   // Instance of the liquid properties for the specified model
   pele::physics::SprayProps::LiqPropType liqprops;

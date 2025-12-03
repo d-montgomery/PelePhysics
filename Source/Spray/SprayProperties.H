@@ -65,46 +65,48 @@ struct BaseLiqProps
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> latentRef_minus_gasRefH_i;
 
   template <typename RealArrayLike>
-  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-  init_mw(const RealArrayLike& mw_gas, const int* dep_indx)
+  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void init_mw(
+    const RealArrayLike& mw_gas,
+    const int* dep_indx,
+    const int N_pc = SPRAY_FUEL_NUM)
   {
-#if SPRAY_FUEL_NUM <= NUM_SPECIES
-    // Use gas-phase molecular weights for the liquid species
-    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      const int fdspec = dep_indx[spf];
-      mw[spf] = mw_gas[fdspec] * SprayUnits::mass_conv;
-    }
-#ifdef PELE_SPRAY_GCM
-    {
-      amrex::ParmParse pp("particles");
-      std::vector<std::string> fuel_names;
-      pp.getarr("fuel_species", fuel_names);
-      amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mw_fl;
-      getInpVal(mw_fl.data(), pp, fuel_names.data(), "molar_weight");
+    if (N_pc == SPRAY_FUEL_NUM) {
+      // Use gas-phase molecular weights for the liquid species
       for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-        const amrex::Real diff = std::abs(mw_fl[spf] - mw[spf]);
-        if (diff > 1.E-3) {
-          amrex::Warning(
-            "Warning: GCM species " + fuel_names[spf] + " mw " +
-            std::to_string(mw_fl[spf]) +
-            " does not match gas-phase species mw " + std::to_string(mw[spf]));
+        const int fdspec = dep_indx[spf];
+        mw[spf] = mw_gas[fdspec] * SprayUnits::mass_conv;
+      }
+#ifdef PELE_SPRAY_GCM
+      {
+        amrex::ParmParse pp("particles");
+        std::vector<std::string> fuel_names;
+        pp.getarr("fuel_species", fuel_names);
+        amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> mw_fl;
+        getInpVal(mw_fl.data(), pp, fuel_names.data(), "molar_weight");
+        for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+          const amrex::Real diff = std::abs(mw_fl[spf] - mw[spf]);
+          if (diff > 1.E-3) {
+            amrex::Warning(
+              "Warning: GCM species " + fuel_names[spf] + " mw " +
+              std::to_string(mw_fl[spf]) +
+              " does not match gas-phase species mw " +
+              std::to_string(mw[spf]));
+          }
         }
       }
-    }
-#endif // PELE_SPRAY_GCM
-#else  // SPRAY_FUEL_NUM > NUM_SPECIES
-    // Must read in molecular weights when SPRAY_FUEL_NUM > NUM_SPECIES
+#endif     // PELE_SPRAY_GCM
+    } else // SPRAY_FUEL_NUM > N_pc: Many-to-one, must read in liquid molecular
+           // weights
     {
       amrex::Warning(
-        "Warning: Spray with SPRAY_FUEL_NUM > NUM_SPECIES still under "
-        "development and requires user specified molecular weights for liquid "
-        "species");
+        "Warning: Deposition of multiple liquid species to a single gas phase "
+        "species is still under development and requires user-specified "
+        "molecular weights for liquid species");
       amrex::ParmParse pp("particles");
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
       getInpVal(mw.data(), pp, fuel_names.data(), "molar_weight");
     }
-#endif
   }
 
   AMREX_GPU_HOST_DEVICE
