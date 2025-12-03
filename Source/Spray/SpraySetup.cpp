@@ -330,22 +330,6 @@ SprayParticleContainer::spraySetup(
         "    Manifold dep species " + m_sprayManifoldDepNames[i] +
         " not found as a manifold parameter");
     }
-
-    // Check if multiple liquid species deposit to the same chem species,
-    // they must also deposit to the same manifold parameter
-    for (int j = 0; j < i; ++j) {
-      if (
-        (m_sprayData->dep_indx[j] == m_sprayData->dep_indx[i]) &&
-        (m_sprayData->dep_manifold_indx[j] !=
-         m_sprayData->dep_manifold_indx[i])) {
-        Abort(
-          "Phase change species " + m_sprayDepNames[i] +
-          " contributes to two separate manifold paramaters (" +
-          m_sprayManifoldDepNames[i] + " and " + m_sprayManifoldDepNames[j] +
-          ") for liquid species " + m_sprayFuelNames[i] + " and " +
-          m_sprayFuelNames[j] + " respectively");
-      }
-    }
   }
 
   // CSR representation of mapping matrix L
