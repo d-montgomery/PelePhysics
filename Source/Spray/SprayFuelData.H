@@ -104,7 +104,7 @@ struct SprayData
   amrex::GpuArray<int, NUM_SPECIES - 1> pc_manifold_indx{};
 #endif
   int N_pc = 0;
-  // We will only use the furst N_pc entries, but don't know that number a
+  // We will only use the first N_pc entries, but don't know that number a
   // priori so allocate NUM_SPECIES which is always >= N_pc
   amrex::GpuArray<int, NUM_SPECIES> pc_indx;
 
