@@ -302,21 +302,6 @@ SprayParticleContainer::spraySetup(
   pele::physics::eos::speciesNames<pele::physics::PhysicsType::eos_type>(
     manivar_names, eosparms_h);
 
-  std::set<std::string> unique_chem_dep_names(
-    m_sprayDepNames, m_sprayDepNames + SPRAY_FUEL_NUM);
-  std::set<std::string> unique_manifold_dep_names(
-    m_sprayManifoldDepNames, m_sprayManifoldDepNames + SPRAY_FUEL_NUM);
-  if (unique_chem_dep_names.size() > chemspec_names.size()) {
-    amrex::Abort(
-      "Number of unique spray dep species exceeds number of chemical species "
-      "in manifold EOS");
-  }
-  if (unique_manifold_dep_names.size() != NUM_SPECIES - 1) {
-    amrex::Abort(
-      "Each liquid spray species must contribute to one manifold "
-      "parameter, as specified through dep_manifold_species");
-  }
-
   for (int i = 0; i < SPRAY_FUEL_NUM; ++i) {
     amrex::Print() << "\nSpray species " << m_sprayFuelNames[i]
                    << " deposits to: \n";
@@ -345,6 +330,22 @@ SprayParticleContainer::spraySetup(
         "    Manifold dep species " + m_sprayManifoldDepNames[i] +
         " not found as a manifold parameter");
     }
+
+    // Check if multiple liquid species deposit to the same chem species,
+    // they must also deposit to the same manifold parameter
+    for (int j = 0; j < i; ++j) {
+      if (
+        (m_sprayData->dep_indx[j] == m_sprayData->dep_indx[i]) &&
+        (m_sprayData->dep_manifold_indx[j] !=
+         m_sprayData->dep_manifold_indx[i])) {
+        Abort(
+          "Phase change species " + m_sprayDepNames[i] +
+          " contributes to two separate manifold paramaters (" +
+          m_sprayManifoldDepNames[i] + " and " + m_sprayManifoldDepNames[j] +
+          ") for liquid species " + m_sprayFuelNames[i] + " and " +
+          m_sprayFuelNames[j] + " respectively");
+      }
+    }
   }
 
   // CSR representation of mapping matrix L
@@ -364,14 +365,6 @@ SprayParticleContainer::spraySetup(
   m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(
     m_sprayData->L_row, m_sprayData->pc_indx.data());
 
-  // Check that m_sprayData->N_pc = NUM_SPECIES - 1 (only true for manifold EOS)
-  if (m_sprayData->N_pc != NUM_SPECIES - 1) {
-    Abort(
-      "Number of phase change species (" + std::to_string(m_sprayData->N_pc) +
-      ") does not equal number of manifold variables - 1 (" +
-      std::to_string(NUM_SPECIES - 1) + ")");
-  }
-
   // Mapping from phase change species to manifold variable
   amrex::Print()
     << "\nMapping from phase change species to manifold variables:\n";
@@ -382,12 +375,27 @@ SprayParticleContainer::spraySetup(
     // Find which spray fuel species deposits to this phase change species
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       if (m_sprayData->dep_indx[spf] == pcspec) {
+        // Check if multiple liquid species deposit to the same phase change
+        // chem species, they must also deposit to the same manifold parameter
+        if (
+          (m_sprayData->pc_manifold_indx[pc] != -1) &&
+          (m_sprayData->pc_manifold_indx[pc] !=
+           m_sprayData->dep_manifold_indx[spf])) {
+
+          Abort(
+            "Phase change species " + m_sprayDepNames[pcspec] +
+            " contributes to two different manifold paramaters (" +
+            m_sprayManifoldDepNames[m_sprayData->pc_manifold_indx[pc]] +
+            " and " +
+            m_sprayManifoldDepNames[m_sprayData->dep_manifold_indx[spf]] +
+            ") for two different liquid species");
+        }
+
         m_sprayData->pc_manifold_indx[pc] = m_sprayData->dep_manifold_indx[spf];
         amrex::Print() << "    pc = " << pc << ": " << chemspec_names[pcspec]
                        << " maps to "
                        << manivar_names[m_sprayData->pc_manifold_indx[pc]]
                        << "\n";
-        break;
       }
     }
     if (m_sprayData->pc_manifold_indx[pc] < 0) {
