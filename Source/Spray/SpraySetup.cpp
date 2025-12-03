@@ -278,7 +278,8 @@ SprayParticleContainer::spraySetup(
   amrex::GpuArray<amrex::Real, NUM_SPECIES> mw;
   Vector<Real> fuelEnth(NUM_SPECIES);
   eos.molecular_weight(mw.data());
-  m_sprayData->liqprops.init_mw(mw, m_sprayData->dep_indx.data());
+  m_sprayData->liqprops.init_mw(
+    mw, m_sprayData->dep_indx.data(), m_sprayData->N_pc);
   eos.T2Hi(m_sprayData->liqprops.ref_T, fuelEnth.data());
   for (int ns = 0; ns < SPRAY_FUEL_NUM; ++ns) {
     const int fdspec = m_sprayData->dep_indx[ns];
@@ -401,7 +402,8 @@ SprayParticleContainer::spraySetup(
   amrex::Vector<amrex::Real> mw(chemspec_names.size());
   auto eos = pele::physics::PhysicsType::eos(eosparms_h);
   eos.molecular_weight(mw.data());
-  m_sprayData->liqprops.init_mw(mw.data(), m_sprayData->dep_indx.data());
+  m_sprayData->liqprops.init_mw(
+    mw.data(), m_sprayData->dep_indx.data(), m_sprayData->N_pc);
 
 #endif
   // Stuff for both detailed chem and manifold
