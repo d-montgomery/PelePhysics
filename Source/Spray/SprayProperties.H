@@ -65,7 +65,7 @@ struct BaseLiqProps
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> latentRef_minus_gasRefH_i;
 
   template <typename RealArrayLike>
-  AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void init_mw(
+  AMREX_FORCE_INLINE void init_mw(
     const RealArrayLike& mw_gas,
     const int* dep_indx,
     const int N_pc = SPRAY_FUEL_NUM)
