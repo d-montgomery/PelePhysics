@@ -258,7 +258,7 @@ SprayParticleContainer::spraySetup(
   m_sprayData->N_pc = m_sprayData->binary_csr_nonzerorows(
     m_sprayData->L_row, m_sprayData->pc_indx.data());
 
-  if (m_sprayData->verbose) {
+  if (m_sprayData->verbose > 0) {
     amrex::Print() << "\nMapping for spray species: \n";
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
       amrex::Print() << spf << ": " << m_sprayFuelNames[spf]
@@ -368,7 +368,7 @@ SprayParticleContainer::spraySetup(
 
           Abort(
             "Phase change species " + m_sprayDepNames[pcspec] +
-            " contributes to two different manifold paramaters (" +
+            " contributes to two different manifold parameters (" +
             m_sprayManifoldDepNames[m_sprayData->pc_manifold_indx[pc]] +
             " and " +
             m_sprayManifoldDepNames[m_sprayData->dep_manifold_indx[spf]] +
