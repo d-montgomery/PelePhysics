@@ -51,7 +51,11 @@ struct GasPhaseVals
   amrex::GpuArray<amrex::Real, NUM_SPECIES> Y_fluid;
   // for manifold Y_fluid is manifold parameters, Yspec_fluid is chemical
   // species - Yspec_fluid is unused for detailed chem
+#ifdef USE_MANIFOLD_EOS
   amrex::GpuArray<amrex::Real, SPRAY_FUEL_NUM> Yspec_fluid;
+#else
+  amrex::GpuArray<amrex::Real, 0> Yspec_fluid;
+#endif
   amrex::Real mw_mix;
   amrex::GpuArray<amrex::Real, NUM_SPECIES> mw;
   amrex::RealVect fluid_mom_src;
