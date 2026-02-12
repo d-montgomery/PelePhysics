@@ -86,11 +86,10 @@ struct BaseLiqProps
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
           const amrex::Real diff = std::abs(mw_fl[spf] - mw[spf]);
           if (diff > 1.E-3) {
-            amrex::Print(
-              "Warning: GCM species " + fuel_names[spf] + " mw " +
-              std::to_string(mw_fl[spf]) +
-              " does not match gas-phase species mw " +
-              std::to_string(mw[spf]));
+            amrex::Print() << "Warning: GCM species " << fuel_names[spf]
+                           << " mw " << mw_fl[spf]
+                           << " does not match gas-phase species mw " << mw[spf]
+                           << "\n";
           }
         }
       }
@@ -98,10 +97,11 @@ struct BaseLiqProps
     } else // SPRAY_FUEL_NUM > N_pc: Many-to-one, must read in liquid molecular
            // weights
     {
-      amrex::Print(
-        "Warning: Deposition of multiple liquid species to a single gas phase "
-        "species is still under development and requires user-specified "
-        "molecular weights for liquid species");
+      amrex::Print()
+        << "Warning: Deposition of multiple liquid species to a single gas "
+           "phase "
+           "species is still under development and requires user-specified "
+           "molecular weights for liquid species\n";
       amrex::ParmParse pp("particles");
       std::vector<std::string> fuel_names;
       pp.getarr("fuel_species", fuel_names);
