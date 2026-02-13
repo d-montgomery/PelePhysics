@@ -86,7 +86,8 @@ struct calcVaporState
       const int fdspec = fdat.dep_indx[spf];
 
       // Compute latent heat
-      const amrex::Real T_part = amrex::min<amrex::Real>(T_in, 0.99 * cBoilT[spf]);
+      const amrex::Real T_part =
+        amrex::min<amrex::Real>(T_in, 0.99 * cBoilT[spf]);
       const amrex::Real part_latent = fdat.liqprops.latent_i(
         T_part, h_gas[fdspec] * SprayUnits::eng_conv, spf);
       L_n[spf] = part_latent;
@@ -548,7 +549,8 @@ calculateSpraySource(
               // accordingly
               Xnorm = X_vn[spf] / X_vi;
             }
-            mn_dot[spf] = -amrex::max<amrex::Real>(Xnorm * rhoD_ri[fdspec] * mdotcoeff, 0.);
+            mn_dot[spf] =
+              -amrex::max<amrex::Real>(Xnorm * rhoD_ri[fdspec] * mdotcoeff, 0.);
             L_n_pc[fdspec] = L_n[spf];
             m_dot += mn_dot[spf];
             sumL += mn_dot[spf] * L_n[spf];
@@ -612,7 +614,8 @@ calculateSpraySource(
         rho_part = fdat.liqprops.rho_mix(Y_part, T_part, cBoilT);
 #else
         oldY_part[0] = p.rdata(SprayComps::pstateY);
-        rho_part = fdat.liqprops.rho_i(amrex::min<amrex::Real>(T_part, cBoilT[0]), 0);
+        rho_part =
+          fdat.liqprops.rho_i(amrex::min<amrex::Real>(T_part, cBoilT[0]), 0);
 #endif
         pmass = new_mass;
         dia_part = std::cbrt(6. * pmass / (M_PI * rho_part));

@@ -146,8 +146,8 @@ calculateFilmSource(
           // Multiple species deposit to fdspec, scale rhoD_{r,n} accordingly
           Xnorm = X_vn[spf] / X_vi;
         }
-        mn_dot[spf] =
-          -amrex::max<amrex::Real>(h_mass * std::pow(Xnorm * rhoD_ri[fdspec], 2. / 3.), 0.);
+        mn_dot[spf] = -amrex::max<amrex::Real>(
+          h_mass * std::pow(Xnorm * rhoD_ri[fdspec], 2. / 3.), 0.);
         m_dot += mn_dot[spf];
         sumL += mn_dot[spf] * L_n[spf];
       }
@@ -164,10 +164,10 @@ calculateFilmSource(
       if (SPRAY_FUEL_NUM > 1) {
         amrex::Real sumY = 0.;
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-            Y_film[spf] = amrex::min<amrex::Real>(
-              1., amrex::max<amrex::Real>(
-                    (Y_film[spf] * film_mass + mn_dot[spf] * dt) / new_mass, 0.));
-            oldY_film[spf] = p.rdata(SprayComps::pstateY + spf);
+          Y_film[spf] = amrex::min<amrex::Real>(
+            1., amrex::max<amrex::Real>(
+                  (Y_film[spf] * film_mass + mn_dot[spf] * dt) / new_mass, 0.));
+          oldY_film[spf] = p.rdata(SprayComps::pstateY + spf);
           if (Y_film[spf] < 1.E-12) {
             Y_film[spf] = 0.;
           }
