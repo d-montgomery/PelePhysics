@@ -201,7 +201,6 @@ struct calcVaporState<pele::physics::eos::Manifold>
 
     // Estimate X_{v,n} from the liquid state
     for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-      const int fmspec = fdat.dep_manifold_indx[spf];
       const int fdspec = fdat.dep_indx[spf];
 
       // Compute latent heat using correlation
@@ -215,7 +214,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
 
       // Mole fraction in gas phase
       const amrex::Real X_gi =
-        gpv.Yspec_fluid[fdspec] * gpv.mw_mix / gpv.mw[fmspec];
+        gpv.Yspec_fluid[fdspec] * gpv.mw_mix / gpv.mw[fdspec];
 
       // Estimate X_gn by distributing X_gi across all the liquid species
       const amrex::Real sumXdn_SLi =
