@@ -86,7 +86,8 @@ struct calcVaporState
       const int fdspec = fdat.dep_indx[spf];
 
       // Compute latent heat
-      const amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
+      const amrex::Real T_part =
+        amrex::min<amrex::Real>(T_in, 0.99 * cBoilT[spf]);
       const amrex::Real part_latent = fdat.liqprops.latent_i(
         T_part, h_gas[fdspec] * SprayUnits::eng_conv, spf);
       L_n[spf] = part_latent;
@@ -161,8 +162,9 @@ struct calcVaporState
     eos.TY2Cp(T_skin, Y_skin, cp_skin);
     mw_skin *= SprayUnits::mass_conv;
     cp_skin *= SprayUnits::eng_conv;
-    B_M = (sumYVap - sumYfFluid) / amrex::max(C_eps, (1. - sumYVap));
-    B_M = amrex::min(20., B_M);
+    B_M =
+      (sumYVap - sumYfFluid) / amrex::max<amrex::Real>(C_eps, (1. - sumYVap));
+    B_M = amrex::min<amrex::Real>(20., B_M);
   }
 };
 
@@ -204,7 +206,7 @@ struct calcVaporState<pele::physics::eos::Manifold>
       const int fdspec = fdat.dep_indx[spf];
 
       // Compute latent heat using correlation
-      amrex::Real T_part = amrex::min(T_in, 0.99 * cBoilT[spf]);
+      amrex::Real T_part = amrex::min<amrex::Real>(T_in, 0.99 * cBoilT[spf]);
       amrex::Real part_latent =
         fdat.liqprops.latent_correlation_i(fdat.liqprops.boilT_i(spf), spf);
       L_n[spf] = part_latent;
@@ -294,8 +296,8 @@ struct calcVaporState<pele::physics::eos::Manifold>
     eos.TY2Cp(T_skin, Y_skin, cp_skin);
     cp_skin *= SprayUnits::eng_conv;
 
-    B_M = (sumYVap - sumYgipc) / amrex::max(C_eps, (1. - sumYVap));
-    B_M = amrex::min(20., B_M);
+    B_M = (sumYVap - sumYgipc) / amrex::max<amrex::Real>(C_eps, (1. - sumYVap));
+    B_M = amrex::min<amrex::Real>(20., B_M);
   }
 };
 
@@ -373,7 +375,7 @@ calculateSpraySource(
     // Average molar mass of liquid droplet
     const amrex::Real mw_part = fdat.liqprops.mw_mix(Y_part);
     // Model the fuel vapor using the one-third rule
-    amrex::Real delT = amrex::max(gpv.T_fluid - T_part, 0.);
+    amrex::Real delT = amrex::max<amrex::Real>(gpv.T_fluid - T_part, 0.);
     amrex::Real T_skin = gpv.T_fluid;
     if (fdat.mass_trans) {
       T_skin = T_part + rule * delT;
@@ -470,8 +472,8 @@ calculateSpraySource(
 #endif
       if (isub == 1) {
         amrex::Real inv_tau_var = drag_force_p;
-        nsub = amrex::min(
-          amrex::max(nsub, static_cast<int>(flow_dt * inv_tau_var) + 1),
+        nsub = amrex::min<int>(
+          amrex::max<int>(nsub, static_cast<int>(flow_dt * inv_tau_var) + 1),
           nSubMax);
       }
     }
@@ -482,8 +484,8 @@ calculateSpraySource(
     if (fdat.mass_trans) {
       amrex::Real Pr_skin = mu_skin * cp_skin / lambda_skin;
 
-      amrex::Real powR =
-        amrex::max(std::pow(amrex::min(400., Reyn), 0.077), 1.);
+      amrex::Real powR = amrex::max<amrex::Real>(
+        std::pow(amrex::min<amrex::Real>(400., Reyn), 0.077), 1.);
       amrex::Real Nu_num = 0.;
       amrex::Real sumL = 0.;
       amrex::Real Nu_0 = 1. + powR * std::cbrt(1. + Reyn * Pr_skin);
@@ -546,7 +548,8 @@ calculateSpraySource(
               // accordingly
               Xnorm = X_vn[spf] / X_vi;
             }
-            mn_dot[spf] = -amrex::max(Xnorm * rhoD_ri[fdspec] * mdotcoeff, 0.);
+            mn_dot[spf] =
+              -amrex::max<amrex::Real>(Xnorm * rhoD_ri[fdspec] * mdotcoeff, 0.);
             L_n_pc[fdspec] = L_n[spf];
             m_dot += mn_dot[spf];
             sumL += mn_dot[spf] * L_n[spf];
@@ -564,9 +567,9 @@ calculateSpraySource(
         // Limit dt so change in mass does not exceed 10%
         amrex::Real inv_tau_d = -m_dot / (0.2 * pmass);
         amrex::Real inv_tau_T = conv_src * inv_pmass / (cp_part * delT);
-        nsub = amrex::min(
-          amrex::max(
-            nsub, amrex::max(
+        nsub = amrex::min<int>(
+          amrex::max<int>(
+            nsub, amrex::max<int>(
                     static_cast<int>(flow_dt * inv_tau_d),
                     static_cast<int>(flow_dt * inv_tau_T)) +
                     1),
@@ -594,9 +597,9 @@ calculateSpraySource(
 #if SPRAY_FUEL_NUM > 1
         amrex::Real sumY = 0.;
         for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
-          Y_part[spf] = amrex::min(
+          Y_part[spf] = amrex::min<amrex::Real>(
             1.,
-            amrex::max(
+            amrex::max<amrex::Real>(
               0., (Y_part[spf] * pmass + mn_dot[spf] * part_dt) / new_mass));
           oldY_part[spf] = p.rdata(SprayComps::pstateY + spf);
           if (Y_part[spf] <= 1.E-12) {
@@ -610,7 +613,8 @@ calculateSpraySource(
         rho_part = fdat.liqprops.rho_mix(Y_part, T_part, cBoilT);
 #else
         oldY_part[0] = p.rdata(SprayComps::pstateY);
-        rho_part = fdat.liqprops.rho_i(amrex::min(T_part, cBoilT[0]), 0);
+        rho_part =
+          fdat.liqprops.rho_i(amrex::min<amrex::Real>(T_part, cBoilT[0]), 0);
 #endif
         pmass = new_mass;
         dia_part = std::cbrt(6. * pmass / (M_PI * rho_part));
