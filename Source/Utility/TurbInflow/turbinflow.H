@@ -37,14 +37,15 @@ struct TurbParm
   amrex::Real szhi = -1.0e11;        // Position of the current chunk high plane
 
   amrex::IntVect periodicity{AMREX_D_DECL(1, 1, 1)};
-  bool isswirltype = false; // false indicates turb data is periodic normal to
-                            // flow dir, true requires time array in turb data
+  bool istimeplanes = false; // false indicates turb data is periodic normal to
+                             // flow dir, true requires time array in turb data
 
   bool extrap_nonperiodic =
     false; // if true, allow interpolation where stencil touches ghost cells for
            // nonperiodic directions
   bool tile_periodic = false; // if true, turbulence is patched over entire face
                               // with a periodic tiled pattern
+  bool time_periodic = false; // if true, turbulence data is looped in time
   TurbInterpType interp_type =
     TurbInterpType::quadratic; // linear required for non-periodic directions
 
