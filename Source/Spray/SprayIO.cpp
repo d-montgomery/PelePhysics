@@ -207,6 +207,11 @@ SprayParticleContainer::PostInitRestart(const std::string& dir, const amrex::Rea
         }
       }
     } else if (!dir.empty() && restart_time > 0.0) {
+#ifndef PELELM_USE_SPRAY
+      amrex::Abort(
+        "Restarting spray from a plot file (initDataPlt) is only supported "
+        "with PeleLMeX.");
+#endif
       // Restarting from plot file without injection_data.log
       // Need to synchronize DPM time with restart time
       if (ParallelDescriptor::IOProcessor()) {
