@@ -427,7 +427,7 @@ SprayParticleContainer::spraySetup(
 }
 
 void
-SprayParticleContainer::SprayInitialize(const std::string& restart_dir)
+SprayParticleContainer::SprayInitialize(const std::string& restart_dir, const amrex::Real restart_time)
 {
   bool init_sprays = false;
   if (restart_dir.empty() && spray_init_file.empty()) {
@@ -439,5 +439,5 @@ SprayParticleContainer::SprayInitialize(const std::string& restart_dir)
   } else if (!restart_dir.empty()) {
     Restart(restart_dir, "particles");
   }
-  PostInitRestart(restart_dir);
+  PostInitRestart(restart_dir, restart_time);
 }

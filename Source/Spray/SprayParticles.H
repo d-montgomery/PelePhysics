@@ -328,7 +328,7 @@ public:
 
   /// \brief Generalized initializer routine. Calls #InitSprayParticles and
   /// #PostInitRestart
-  void SprayInitialize(const std::string& restart_dir = "");
+  void SprayInitialize(const std::string& restart_dir = "", const amrex::Real restart_time = 0.0);
 
   /// \brief Problem specific initialization routine. Typically initializes the
   /// SprayJet pointers or calls #uniformSprayInit
@@ -338,7 +338,7 @@ public:
   /// injection data files if they are present. Checks to ensure all jet names
   /// are unique
   /// @param dir Name of restart directory
-  void PostInitRestart(const std::string& dir = "");
+  void PostInitRestart(const std::string& dir = "", const amrex::Real restart_time = 0.0);
 
   /// \brief Return the number of derived spray variables
   static int NumDeriveVars()
