@@ -235,34 +235,31 @@ SprayParticleContainer::PostInitRestart(const std::string& dir, const amrex::Rea
           Real target_dpm_time = js->get_dpm_time_initial_injection() + time_offset;
           Real dpm_period = js->dpm_final_time() - js->dpm_intial_time();
           
-          // If periodic, wrap the DPM time to be within the DPM file range
+          // When restarting from plot file, we must set m_cur_inj_dpm_time to a value 
+          // that exists in the DPM file. Start from the beginning of the DPM file.
+          js->m_cur_inj_dpm_time = js->dpm_intial_time();
+
+          // Initial iterations are skipped for initDataPlt + spray restarts, so
+          // injection can resume immediately at restart time.
+          js->m_nxt_inj_flw_time = restart_time;
+          
+          // Log what cycle we're in for reference
           if (js->is_dpm_periodic && dpm_period > 0.0) {
             Real time_in_cycle = target_dpm_time - js->dpm_intial_time();
             Real num_cycles = std::floor(time_in_cycle / dpm_period);
-            target_dpm_time = js->dpm_intial_time() + (time_in_cycle - num_cycles * dpm_period);
             
             if (ParallelDescriptor::IOProcessor()) {
               Print() << "  Jet " << js->jet_name() 
-                      << ": periodic DPM, wrapped to time " << target_dpm_time 
-                      << " (cycle " << num_cycles << ")\n";
+                      << ": periodic DPM, currently in cycle " << num_cycles 
+                      << " at time " << target_dpm_time << "s\n";
+              Print() << "    Set to start from DPM beginning, next injection at flow time " 
+                      << js->m_nxt_inj_flw_time << "s\n";
             }
-          }
-          
-          // Clamp to valid DPM range
-          if (target_dpm_time < js->dpm_intial_time()) {
-            target_dpm_time = js->dpm_intial_time();
-          } else if (!js->is_dpm_periodic && target_dpm_time > js->dpm_final_time()) {
-            target_dpm_time = js->dpm_final_time();
-          }
-          
-          // Set the current DPM time to the calculated value
-          js->m_cur_inj_dpm_time = target_dpm_time;
-          js->m_nxt_inj_flw_time = restart_time;
-          
-          if (ParallelDescriptor::IOProcessor()) {
-            Print() << "  Jet " << js->jet_name()
-                    << ": synchronized DPM time = " << js->m_cur_inj_dpm_time
-                    << ", next injection flow time = " << js->m_nxt_inj_flw_time << "\n";
+          } else if (ParallelDescriptor::IOProcessor()) {
+            Print() << "  Jet " << js->jet_name() 
+                    << ": non-periodic DPM, restart target time " << target_dpm_time << "s\n";
+            Print() << "    Set to start from DPM beginning, next injection at flow time " 
+                    << js->m_nxt_inj_flw_time << "s\n";
           }
         }
       }
