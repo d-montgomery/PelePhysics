@@ -81,6 +81,23 @@ public:
     const int num_redist = 1,
     const amrex::Real num_ppp = 1.);
 
+  /// \brief Initialization routine for a single droplet
+  /// @param pos_part Droplet position
+  /// @param vel_part Droplet velocity
+  /// @param dia_part Droplet diameter
+  /// @param T_part Droplet temperature
+  /// @param Y_part Pointer to array of droplet mass fractions
+  /// @param level Current AMR level
+  /// @param num_ppp Number of droplets per parcel
+  void singleSprayInit(
+    const amrex::RealVect pos_part,
+    const amrex::RealVect vel_part,
+    const amrex::Real dia_part,
+    const amrex::Real T_part,
+    const amrex::Real* Y_part,
+    const int level,
+    const amrex::Real num_ppp = 1.);
+
   /// \brief Setup spray parameters
   static void spraySetup(
     const amrex::Real* body_force,

@@ -595,4 +595,82 @@ SprayParticleContainer::uniformSprayInit(
     Redistribute();
   } // for (int which ...
 }
+
+void
+SprayParticleContainer::singleSprayInit(
+  const amrex::RealVect pos_part,
+  const amrex::RealVect vel_part,
+  const amrex::Real dia_part,
+  const amrex::Real T_part,
+  const amrex::Real* Y_part,
+  const int level,
+  const amrex::Real num_ppp)
+{
+  // Initialize a single spray droplet at a specified location
+  const SprayData* fdat = m_sprayData;
+  amrex::Real initial_bm2 = 0.;
+  if (fdat->do_breakup == 2) {
+    // If KHRT is used, BM2 is RT time
+    initial_bm2 = -1.;
+  }
+
+  // Create the particle
+  ParticleType p;
+  p.id() = ParticleType::NextID();
+  p.cpu() = amrex::ParallelDescriptor::MyProc();
+
+  // Set particle position
+  AMREX_D_TERM(p.pos(0) = pos_part[0];, p.pos(1) = pos_part[1];
+               , p.pos(2) = pos_part[2];);
+
+  // Set particle velocity
+  AMREX_D_TERM(p.rdata(SprayComps::pstateVel) = vel_part[0];
+               , p.rdata(SprayComps::pstateVel + 1) = vel_part[1];
+               , p.rdata(SprayComps::pstateVel + 2) = vel_part[2];);
+
+  // Set particle properties
+  p.rdata(SprayComps::pstateT) = T_part;
+  p.rdata(SprayComps::pstateDia) = dia_part;
+
+  // Set particle composition
+  if (SPRAY_FUEL_NUM > 1) {
+    for (int spf = 0; spf < SPRAY_FUEL_NUM; ++spf) {
+      p.rdata(SprayComps::pstateY + spf) = Y_part[spf];
+    }
+  } else {
+    p.rdata(SprayComps::pstateY) = 1.;
+  }
+
+  // Set number density and breakup-related properties
+  p.rdata(SprayComps::pstateBM1) = 0.;
+  p.rdata(SprayComps::pstateBM2) = initial_bm2;
+  p.rdata(SprayComps::pstateFilmHght) = 0.;
+  p.rdata(SprayComps::pstateN0) = num_ppp;
+  p.rdata(SprayComps::pstateNumDens) = num_ppp;
+
+  // Find grid and tile for this particle
+  amrex::ParticleLocData pld;
+  bool where = Where(p, pld);
+  if (!where) {
+    amrex::Abort(
+      "Single droplet initialization: particle is outside domain bounds");
+  }
+
+  // Add particle to the appropriate grid/tile
+  std::pair<int, int> ind(pld.m_grid, pld.m_tile);
+  auto& dst_tile = GetParticles(level)[ind];
+  auto old_size = dst_tile.GetArrayOfStructs().size();
+  auto new_size = old_size + 1;
+  dst_tile.resize(new_size);
+
+  // Copy particle to GPU
+  amrex::Gpu::HostVector<ParticleType> host_particle;
+  host_particle.push_back(p);
+  amrex::Gpu::copy(
+    amrex::Gpu::hostToDevice, host_particle.begin(), host_particle.end(),
+    dst_tile.GetArrayOfStructs().begin() + old_size);
+
+  // Redistribute particles after initialization
+  Redistribute();
+}
 #endif
